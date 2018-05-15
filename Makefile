@@ -1,4 +1,4 @@
-# Copyright 2016 The Kubernetes Authors.
+# Copyright 2018 The Kubernetes Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,3 +12,107 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+GO := go
+PROJECT := k8s.io/frakti
+BINDIR := /usr/local/bin
+BUILD_DIR := _output
+BUILD_TAGS := seccomp apparmor
+# Add `-TEST` suffix to indicate that all binaries built from this repo are for test.
+GO_LDFLAGS := -X $(PROJECT)/vendor/github.com/containerd/containerd/version.Version=1.1.0-TEST
+VERSION := 0.1
+SOURCES := $(shell find cmd/ pkg/ vendor/ -name '*.go')
+PLUGIN_SOURCES := $(shell ls *.go)
+
+.PHONY: all
+all: binaries
+
+.PHONY: help
+help:
+	@echo "Usage: make <target>"
+	@echo
+	@echo " * 'install'          	- Install binaries to system locations"
+	@echo " * 'binaries'         	- Build containerd and ctr"
+	@echo " * 'ctr'  		- Build ctr"
+	@echo " * 'install-ctr' 	- Install ctr"
+	@echo " * 'containerd'  	- Build a customized containerd with CRI plugin for testing"
+	@echo " * 'install-containerd'	- Install customized containerd to system location"
+	@echo " * 'clean'            	- Clean artifacts"
+	@echo " * 'verify'           	- Execute the source code verification tools"
+	@echo " * 'install.tools'    	- Install tools used by verify"
+	@echo " * 'install.deps'     	- Install dependencies of cri (Note: BUILDTAGS defaults to 'seccomp apparmor' for runc build")
+	@echo " * 'uninstall'        	- Remove installed binaries from system locations"
+	@echo " * 'version'          	- Print current containerd-kata plugin version"
+	@echo " * 'update-vendor'    	- Syncs containerd/vendor.conf -> vendor.conf and sorts vendor.conf"
+
+.PHONY: verify
+verify: lint gofmt boiler
+
+.PHONY: version
+version:
+	@echo $(VERSION)
+
+.PHONY: lint
+lint:
+	@echo "checking lint"
+	@./hack/verify-lint.sh
+
+.PHONY: gofmt
+gofmt:
+	@echo "checking gofmt"
+	@./hack/verify-gofmt.sh
+
+.PHONY: boiler
+boiler:
+	@echo "checking boilerplate"
+	@./hack/verify-boilerplate.sh
+
+.PHONY: $(BUILD_DIR)/ctr
+$(BUILD_DIR)/ctr: $(SOURCES)
+	$(GO) build -o $@ \
+		-tags '$(BUILD_TAGS)' \
+		-ldflags '$(GO_LDFLAGS)' \
+		$(PROJECT)/cmd/ctr
+
+.PHONY: $(BUILD_DIR)/containerd
+$(BUILD_DIR)/containerd: $(SOURCES) $(PLUGIN_SOURCES)
+	$(GO) build -o $@ \
+		-tags '$(BUILD_TAGS)' \
+		-ldflags '$(GO_LDFLAGS)' \
+		$(PROJECT)/cmd/containerd
+
+.PHONY: binaries
+binaries: $(BUILD_DIR)/containerd $(BUILD_DIR)/ctr
+
+.PHONY: ctr
+ctr: $(BUILD_DIR)/ctr
+
+.PHONY: install-ctr
+install-ctr: ctr
+	install -D -m 755 $(BUILD_DIR)/ctr $(BINDIR)/ctr
+
+.PHONY: containerd
+containerd: $(BUILD_DIR)/containerd
+
+.PHONY: install-containerd
+install-containerd: containerd
+	install -D -m 755 $(BUILD_DIR)/containerd $(BINDIR)/containerd
+
+.PHONY: install
+install: install-ctr install-containerd
+
+.PHONY: uninstall
+uninstall:
+	rm -f $(BINDIR)/containerd
+	rm -f $(BINDIR)/ctr
+
+.PHONY: clean 
+clean:
+	rm -rf $(BUILD_DIR)/*
+
+.PHONY: install.tools 
+install.tools: .install.gometalinter
+
+.PHONY: .install.gometalinter
+.install.gometalinter:
+	$(GO) get -u github.com/alecthomas/gometalinter
+	gometalinter --install

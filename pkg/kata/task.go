@@ -22,6 +22,8 @@ import (
     "sync"
 
 
+    cgroups "github.com/containerd/cgroups"
+    exchange "github.com/containerd/containerd/events/exchange"
     "github.com/containerd/containerd/runtime"
     "github.com/gogo/protobuf/types"
 )
@@ -34,6 +36,36 @@ type Task struct {
 	namespace string
 	pid       uint32
     status    runtime.Status
+
+    cg        cgroups.Cgroup
+    monitor   runtime.TaskMonitor
+    events    *exchange.Exchange
+}
+
+func newTask(ctx context.Context, id, namespace string, pid int, monitor runtime.TaskMonitor, events *exchange.Exchange, containerType string, opts runtime.CreateOpts, r *Runtime) (*Task, error) {
+	var (
+		err error
+		cg  cgroups.Cgroup
+	)
+	if pid > 0 {
+		cg, err = cgroups.Load(cgroups.V1, cgroups.PidPath(pid))
+		if err != nil && err != cgroups.ErrCgroupDeleted {
+			return nil, err
+		}
+    }
+    
+	// create kata container
+	
+	r.CreateSandbox(ctx, id, opts)
+
+	return &Task{
+		id:        id,
+		pid:       pid,
+		namespace: namespace,
+		cg:        cg,
+		monitor:   monitor,
+		events:    events,
+	}, nil
 }
 
 // ID of the task

@@ -33,7 +33,8 @@ func init() {
 		Type:   plugin.RuntimePlugin,
 		InitFn: kata.New,
 		Requires: []plugin.Type{
-			plugin.MetadataPlugin,
+			plugin.TaskMetadataPlugin,
+			plugin.MonitorPlugin,
 		},
 	})
 }

@@ -21,11 +21,71 @@ import (
 	"fmt"
 
 	"github.com/containerd/containerd/runtime"
+	errors "github.com/pkg/errors"
+
+	vc "github.com/kata-containers/runtime/virtcontainers"
 )
 
 // CreateSandbox creates a kata-runtime sandbox
 func (r *Runtime) CreateSandbox(ctx context.Context, id string, opts runtime.CreateOpts) error {
-	return fmt.Errorf("not implemented")
+	envs := []vc.EnvVar{
+		{
+			Var:   "PATH",
+			Value: "/bin:/usr/bin:/sbin:/usr/sbin",
+		},
+	}
+
+	cmd := vc.Cmd{
+		Args:    strings.Split("/bin/sh", " "),
+		Envs:    envs,
+		WorkDir: "/",
+	}
+
+	// Define the container command and bundle.
+	container := vc.ContainerConfig{
+		ID:     id,
+		RootFs: opts.Rootfs,
+		Cmd:    cmd,
+	}
+
+	// Sets the hypervisor configuration.
+	hypervisorConfig := vc.HypervisorConfig{
+		KernelPath:     "/usr/share/clear-containers/vmlinux.container",
+		ImagePath:      "/usr/share/clear-containers/clear-containers.img",
+		HypervisorPath: "/usr/bin/qemu-lite-system-x86_64",
+	}
+
+	// Use hyperstart default values for the agent.
+	agConfig := vc.HyperConfig{}
+
+	// VM resources
+	vmConfig := vc.Resources{
+		VCPUs:  4,
+		Memory: 1024,
+	}
+
+	// The sandbox configuration:
+	// - One container
+	// - Hypervisor is QEMU
+	// - Agent is hyperstart
+	sandboxConfig := vc.SandboxConfig{
+		VMConfig: vmConfig,
+
+		HypervisorType:   vc.QemuHypervisor,
+		HypervisorConfig: hypervisorConfig,
+
+		AgentType:   vc.HyperstartAgent,
+		AgentConfig: agConfig,
+
+		Containers: []vc.ContainerConfig{container},
+	}
+
+	_, err := vc.RunSandbox(sandboxConfig)
+	if err != nil {
+		return errors.Wrapf("Could not run sandbox: %s", err)
+	}
+
+	return
 }
 
 // StartSandbox starts a kata-runtime sandbox

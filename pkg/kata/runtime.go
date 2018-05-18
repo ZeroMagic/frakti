@@ -19,16 +19,23 @@ package kata
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
+	"path/filepath"
 
+	eventstypes "github.com/containerd/containerd/api/events"
+	types "github.com/containerd/containerd/api/types"
 	"github.com/containerd/containerd/events/exchange"
-	"github.com/containerd/containerd/log"
+	identifiers "github.com/containerd/containerd/identifiers"
+	log "github.com/containerd/containerd/log"
 	"github.com/containerd/containerd/metadata"
+	"github.com/containerd/containerd/namespaces"
 	"github.com/containerd/containerd/platforms"
 	"github.com/containerd/containerd/plugin"
 	"github.com/containerd/containerd/runtime"
+	"github.com/containerd/typeurl"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
+	runtimespec "github.com/opencontainers/runtime-spec/specs-go"
+	errors "github.com/pkg/errors"
 	
 )
 
@@ -43,9 +50,11 @@ var (
 
 // Runtime for kata containers
 type Runtime struct {
+
 	root    string
 	state   string
 	address string
+	pidPool *pidPool
 
 	monitor runtime.TaskMonitor
 	tasks   *runtime.TaskList
@@ -74,23 +83,16 @@ func New(ic *plugin.InitContext) (interface{}, error) {
 	r := &Runtime{
 		root:    ic.Root,
 		state:   ic.State,
+		address: ic.Address,
+		pidPool: newPidPool(),
+
 		monitor: monitor.(runtime.TaskMonitor),
 		tasks:   runtime.NewTaskList(),
 		db:      m.(*metadata.DB),
-		address: ic.Address,
 		events:  ic.Events,
 	}
 
-	tasks, err := r.restoreTasks(ic.Context)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, t := range tasks {
-			if err := r.tasks.AddWithNamespace(t.namespace, t); err != nil {
-			return nil, err
-		}
-	}
+	// TODO(ZeroMagic): reconnect the existing kata containers
 
 	return r, nil
 }
@@ -104,8 +106,96 @@ func (r *Runtime) ID() string {
 func (r *Runtime) Create(ctx context.Context, id string, opts runtime.CreateOpts) (runtime.Task, error) {
 	
 	// TODO(ZeroMagic): create a new task
+
+	// get namespace
+	namespace, err := namespaces.NamespaceRequired(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := identifiers.Validate(id); err != nil {
+		return nil, errors.Wrapf(err, "invalid task id")
+	}
+
+	// Does kata-runtime have some config ?
+
+	// create bundle to store local image
+	bundle, err := newBundle(id,
+		filepath.Join(r.state, namespace),
+		filepath.Join(r.root, namespace),
+		opts.Spec.Value)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if err != nil {
+			bundle.Delete()
+		}
+	}()
+
+	// get pid for application
+	var pid uint32
+	if pid, err = r.pidPool.Get(); err != nil {
+		return nil, err
+	}
+	defer func() {
+		if err != nil {
+			r.pidPool.Put(pid)
+		}
+	}()
+
+	// mount
+	var eventRootfs []*types.Mount
+	for _, m := range opts.Rootfs {
+		eventRootfs = append(eventRootfs, &types.Mount{
+			Type:    m.Type,
+			Source:  m.Source,
+			Options: m.Options,
+		})
+	}
+
+	// With annotation, we can tell sandbox from container
+	s, err := typeurl.UnmarshalAny(opts.Spec)
+	if err != nil {
+		return nil, err
+	}
+	spec := s.(*runtimespec.Spec)
+	containerType := spec.Annotations[ContainerType]
+
+	// new task
+	t, err := newTask(id, namespace, pid, r.monitor, r.events, containerType, opts, r)
+	if err != nil {
+		return nil, err
+	}
+	if err := r.tasks.Add(ctx, t); err != nil {
+		return nil, err
+	}
+	// after the task is created, add it to the monitor if it has a cgroup
+	// this can be different on a checkpoint/restore
+	if t.cg != nil {
+		if err = r.monitor.Monitor(t); err != nil {
+			if _, err := r.Delete(ctx, t); err != nil {
+				log.G(ctx).WithError(err).Error("deleting task after failed monitor")
+			}
+			return nil, err
+		}
+	}
 	
-	return nil, fmt.Errorf("not implemented")
+	r.events.Publish(ctx, runtime.TaskCreateEventTopic, &eventstypes.TaskCreate{
+		ContainerID: id,
+		Bundle:      bundle,
+		Rootfs:      eventRootfs,
+		IO: &eventstypes.TaskIO{
+			Stdin:    opts.IO.Stdin,
+			Stdout:   opts.IO.Stdout,
+			Stderr:   opts.IO.Stderr,
+			Terminal: opts.IO.Terminal,
+		},
+		Checkpoint: opts.Checkpoint,
+		Pid:    t.pid,
+	})
+	
+	return t, nil
 }
 
 // Get a specific task by task id.
@@ -123,33 +213,5 @@ func (r *Runtime) Delete(ctx context.Context, t runtime.Task) (*runtime.Exit, er
 	
 	// TODO(ZeroMagic): delete a task
 	
-	return nil, fmt.Errorf("not implemented")
-}
-
-func (r *Runtime) restoreTasks(ctx context.Context) ([]*Task, error) {
-	dir, err := ioutil.ReadDir(r.state)
-	if err != nil {
-		return nil, err
-	}
-	var o []*Task
-	for _, namespace := range dir {
-		if !namespace.IsDir() {
-			continue
-		}
-		name := namespace.Name()
-		log.G(ctx).WithField("namespace", name).Debug("loading tasks in namespace")
-		tasks, err := r.loadTasks(ctx, name)
-		if err != nil {
-			return nil, err
-		}
-		o = append(o, tasks...)
-	}
-	return o, nil
-}
-
-func (r *Runtime) loadTasks(ctx context.Context, ns string) ([]*Task, error) {
-	
-	// TODO(ZeroMagic): load all tasks
-
 	return nil, fmt.Errorf("not implemented")
 }

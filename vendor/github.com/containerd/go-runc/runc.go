@@ -208,7 +208,7 @@ func (o *ExecOpts) args() (out []string, err error) {
 // Exec executres and additional process inside the container based on a full
 // OCI Process specification
 func (r *Runc) Exec(context context.Context, id string, spec specs.Process, opts *ExecOpts) error {
-	f, err := ioutil.TempFile("", "runc-process")
+	f, err := ioutil.TempFile(os.Getenv("XDG_RUNTIME_DIR"), "runc-process")
 	if err != nil {
 		return err
 	}
@@ -512,10 +512,11 @@ type RestoreOpts struct {
 	CheckpointOpts
 	IO
 
-	Detach      bool
-	PidFile     string
-	NoSubreaper bool
-	NoPivot     bool
+	Detach        bool
+	PidFile       string
+	NoSubreaper   bool
+	NoPivot       bool
+	ConsoleSocket ConsoleSocket
 }
 
 func (o *RestoreOpts) args() ([]string, error) {
@@ -529,6 +530,9 @@ func (o *RestoreOpts) args() ([]string, error) {
 			return nil, err
 		}
 		out = append(out, "--pid-file", abs)
+	}
+	if o.ConsoleSocket != nil {
+		out = append(out, "--console-socket", o.ConsoleSocket.Path())
 	}
 	if o.NoPivot {
 		out = append(out, "--no-pivot")

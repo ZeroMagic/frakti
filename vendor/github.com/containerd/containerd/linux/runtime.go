@@ -79,7 +79,7 @@ func init() {
 	})
 }
 
-var _ = (runtime.PlatformRuntime)(&Runtime{})
+var _ = (runtime.Runtime)(&Runtime{})
 
 // Config options for the runtime
 type Config struct {

@@ -41,18 +41,6 @@ type LinkAttrs struct {
 	NetNsID      int
 	NumTxQueues  int
 	NumRxQueues  int
-	Vfs          []VfInfo // virtual functions available on link
-}
-
-// VfInfo represents configuration of virtual function
-type VfInfo struct {
-	ID        int
-	Mac       net.HardwareAddr
-	Vlan      int
-	Qos       int
-	TxRate    int
-	Spoofchk  bool
-	LinkState uint32
 }
 
 // LinkOperState represents the values of the IFLA_OPERSTATE link
@@ -274,9 +262,6 @@ const (
 type Macvlan struct {
 	LinkAttrs
 	Mode MacvlanMode
-
-	// MACAddrs is only populated for Macvlan SOURCE links
-	MACAddrs []net.HardwareAddr
 }
 
 func (macvlan *Macvlan) Attrs() *LinkAttrs {
@@ -717,9 +702,6 @@ func (gretap *Gretap) Attrs() *LinkAttrs {
 }
 
 func (gretap *Gretap) Type() string {
-	if gretap.Local.To4() == nil {
-		return "ip6gretap"
-	}
 	return "gretap"
 }
 
@@ -808,9 +790,6 @@ func (gretun *Gretun) Attrs() *LinkAttrs {
 }
 
 func (gretun *Gretun) Type() string {
-	if gretun.Local.To4() == nil {
-		return "ip6gre"
-	}
 	return "gre"
 }
 

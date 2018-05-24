@@ -38,7 +38,6 @@ const (
 	Cpuacct   Name = "cpuacct"
 	Memory    Name = "memory"
 	Blkio     Name = "blkio"
-	Rdma      Name = "rdma"
 )
 
 // Subsystems returns a complete list of the default cgroups
@@ -56,7 +55,6 @@ func Subsystems() []Name {
 		Cpuacct,
 		Memory,
 		Blkio,
-		Rdma,
 	}
 	if !isUserNS {
 		n = append(n, Devices)

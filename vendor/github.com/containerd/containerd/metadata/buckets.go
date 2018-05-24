@@ -135,7 +135,11 @@ func getImagesBucket(tx *bolt.Tx, namespace string) *bolt.Bucket {
 }
 
 func createContainersBucket(tx *bolt.Tx, namespace string) (*bolt.Bucket, error) {
-	return createBucketIfNotExists(tx, bucketKeyVersion, []byte(namespace), bucketKeyObjectContainers)
+	bkt, err := createBucketIfNotExists(tx, bucketKeyVersion, []byte(namespace), bucketKeyObjectContainers)
+	if err != nil {
+		return nil, err
+	}
+	return bkt, nil
 }
 
 func getContainersBucket(tx *bolt.Tx, namespace string) *bolt.Bucket {

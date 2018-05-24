@@ -1,5 +1,5 @@
 /*
-Copyright The Kubernetes Authors.
+Copyright 2018 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -434,9 +434,7 @@ func (m *PortMapping) GetHostIp() string {
 type Mount struct {
 	// Path of the mount within the container.
 	ContainerPath string `protobuf:"bytes,1,opt,name=container_path,json=containerPath,proto3" json:"container_path,omitempty"`
-	// Path of the mount on the host. If the hostPath doesn't exist, then runtimes
-	// should report error. If the hostpath is a symbolic link, runtimes should
-	// follow the symlink and mount the real destination to container.
+	// Path of the mount on the host.
 	HostPath string `protobuf:"bytes,2,opt,name=host_path,json=hostPath,proto3" json:"host_path,omitempty"`
 	// If set, the mount is read-only.
 	Readonly bool `protobuf:"varint,3,opt,name=readonly,proto3" json:"readonly,omitempty"`
@@ -557,8 +555,7 @@ type LinuxSandboxSecurityContext struct {
 	SelinuxOptions *SELinuxOption `protobuf:"bytes,2,opt,name=selinux_options,json=selinuxOptions" json:"selinux_options,omitempty"`
 	// UID to run sandbox processes as, when applicable.
 	RunAsUser *Int64Value `protobuf:"bytes,3,opt,name=run_as_user,json=runAsUser" json:"run_as_user,omitempty"`
-	// GID to run sandbox processes as, when applicable. run_as_group should only
-	// be specified when run_as_user is specified; otherwise, the runtime MUST error.
+	// GID to run sandbox processes as, when applicable.
 	RunAsGroup *Int64Value `protobuf:"bytes,8,opt,name=run_as_group,json=runAsGroup" json:"run_as_group,omitempty"`
 	// If set, the root filesystem of the sandbox is read-only.
 	ReadonlyRootfs bool `protobuf:"varint,4,opt,name=readonly_rootfs,json=readonlyRootfs,proto3" json:"readonly_rootfs,omitempty"`
@@ -572,7 +569,7 @@ type LinuxSandboxSecurityContext struct {
 	// privileged containers are expected to be run.
 	Privileged bool `protobuf:"varint,6,opt,name=privileged,proto3" json:"privileged,omitempty"`
 	// Seccomp profile for the sandbox, candidate values are:
-	// * runtime/default: the default profile for the container runtime
+	// * docker/default: the default profile for the docker container runtime
 	// * unconfined: unconfined profile, ie, no seccomp sandboxing
 	// * localhost/<full-path-to-profile>: the profile installed on the node.
 	//   <full-path-to-profile> is the full path of the profile.
@@ -744,7 +741,7 @@ type PodSandboxConfig struct {
 	// structured logs, systemd-journald journal files, gRPC trace files, etc.
 	// E.g.,
 	//     PodSandboxConfig.LogDirectory = `/var/log/pods/<podUID>/`
-	//     ContainerConfig.LogPath = `containerName/Instance#.log`
+	//     ContainerConfig.LogPath = `containerName_Instance#.log`
 	//
 	// WARNING: Log management and how kubelet should interface with the
 	// container logs are under active discussion in
@@ -1466,9 +1463,8 @@ type LinuxContainerSecurityContext struct {
 	// UID to run the container process as. Only one of run_as_user and
 	// run_as_username can be specified at a time.
 	RunAsUser *Int64Value `protobuf:"bytes,5,opt,name=run_as_user,json=runAsUser" json:"run_as_user,omitempty"`
-	// GID to run the container process as. run_as_group should only be specified
-	// when run_as_user or run_as_username is specified; otherwise, the runtime
-	// MUST error.
+	// GID to run the container process as. Only one of run_as_group and
+	// run_as_groupname can be specified at a time.
 	RunAsGroup *Int64Value `protobuf:"bytes,12,opt,name=run_as_group,json=runAsGroup" json:"run_as_group,omitempty"`
 	// User name to run the container process as. If specified, the user MUST
 	// exist in the container image (i.e. in the /etc/passwd inside the image),
@@ -1487,7 +1483,7 @@ type LinuxContainerSecurityContext struct {
 	//    http://wiki.apparmor.net/index.php/AppArmor_Core_Policy_Reference
 	ApparmorProfile string `protobuf:"bytes,9,opt,name=apparmor_profile,json=apparmorProfile,proto3" json:"apparmor_profile,omitempty"`
 	// Seccomp profile for the container, candidate values are:
-	// * runtime/default: the default profile for the container runtime
+	// * docker/default: the default profile for the docker container runtime
 	// * unconfined: unconfined profile, ie, no seccomp sandboxing
 	// * localhost/<full-path-to-profile>: the profile installed on the node.
 	//   <full-path-to-profile> is the full path of the profile.
@@ -1790,7 +1786,7 @@ type ContainerConfig struct {
 	// the log (STDOUT and STDERR) on the host.
 	// E.g.,
 	//     PodSandboxConfig.LogDirectory = `/var/log/pods/<podUID>/`
-	//     ContainerConfig.LogPath = `containerName/Instance#.log`
+	//     ContainerConfig.LogPath = `containerName_Instance#.log`
 	//
 	// WARNING: Log management and how kubelet should interface with the
 	// container logs are under active discussion in
@@ -3052,8 +3048,7 @@ func (*RemoveImageResponse) ProtoMessage()               {}
 func (*RemoveImageResponse) Descriptor() ([]byte, []int) { return fileDescriptorApi, []int{76} }
 
 type NetworkConfig struct {
-	// CIDR to use for pod IP addresses. If the CIDR is empty, runtimes
-	// should omit it.
+	// CIDR to use for pod IP addresses.
 	PodCidr string `protobuf:"bytes,1,opt,name=pod_cidr,json=podCidr,proto3" json:"pod_cidr,omitempty"`
 }
 

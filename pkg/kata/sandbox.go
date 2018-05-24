@@ -19,6 +19,7 @@ package kata
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/containerd/containerd/runtime"
 	errors "github.com/pkg/errors"
@@ -44,7 +45,7 @@ func (r *Runtime) CreateSandbox(ctx context.Context, id string, opts runtime.Cre
 	// Define the container command and bundle.
 	container := vc.ContainerConfig{
 		ID:     id,
-		RootFs: opts.Rootfs,
+		RootFs: opts.Rootfs[0].Source,
 		Cmd:    cmd,
 	}
 
@@ -60,7 +61,6 @@ func (r *Runtime) CreateSandbox(ctx context.Context, id string, opts runtime.Cre
 
 	// VM resources
 	vmConfig := vc.Resources{
-		VCPUs:  4,
 		Memory: 1024,
 	}
 
@@ -82,10 +82,10 @@ func (r *Runtime) CreateSandbox(ctx context.Context, id string, opts runtime.Cre
 
 	_, err := vc.RunSandbox(sandboxConfig)
 	if err != nil {
-		return errors.Wrapf("Could not run sandbox: %s", err)
+		return errors.Wrapf(err, "Could not run sandbox")
 	}
 
-	return
+	return err
 }
 
 // StartSandbox starts a kata-runtime sandbox

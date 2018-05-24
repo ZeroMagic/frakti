@@ -76,12 +76,12 @@ func defaultNamespaces() []specs.LinuxNamespace {
 	}
 }
 
-func createDefaultSpec(ctx context.Context, id string) (*Spec, error) {
+func createDefaultSpec(ctx context.Context, id string) (*specs.Spec, error) {
 	ns, err := namespaces.NamespaceRequired(ctx)
 	if err != nil {
 		return nil, err
 	}
-	s := &Spec{
+	s := &specs.Spec{
 		Version: specs.Version,
 		Root: &specs.Root{
 			Path: defaultRootfsPath,

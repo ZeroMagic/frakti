@@ -26,7 +26,7 @@ type Version struct {
 	Minor uint64
 	Patch uint64
 	Pre   []PRVersion
-	Build []string //No Precedence
+	Build []string //No Precendence
 }
 
 // Version to string
@@ -197,29 +197,6 @@ func New(s string) (vp *Version, err error) {
 
 // Make is an alias for Parse, parses version string and returns a validated Version or error
 func Make(s string) (Version, error) {
-	return Parse(s)
-}
-
-// ParseTolerant allows for certain version specifications that do not strictly adhere to semver
-// specs to be parsed by this library. It does so by normalizing versions before passing them to
-// Parse(). It currently trims spaces, removes a "v" prefix, and adds a 0 patch number to versions
-// with only major and minor components specified
-func ParseTolerant(s string) (Version, error) {
-	s = strings.TrimSpace(s)
-	s = strings.TrimPrefix(s, "v")
-
-	// Split into major.minor.(patch+pr+meta)
-	parts := strings.SplitN(s, ".", 3)
-	if len(parts) < 3 {
-		if strings.ContainsAny(parts[len(parts)-1], "+-") {
-			return Version{}, errors.New("Short version cannot contain PreRelease/Build meta data")
-		}
-		for len(parts) < 3 {
-			parts = append(parts, "0")
-		}
-		s = strings.Join(parts, ".")
-	}
-
 	return Parse(s)
 }
 

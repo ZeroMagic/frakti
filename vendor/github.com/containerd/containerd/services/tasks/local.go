@@ -79,14 +79,14 @@ func initFunc(ic *plugin.InitContext) (interface{}, error) {
 		return nil, err
 	}
 	cs := m.(*metadata.DB).ContentStore()
-	runtimes := make(map[string]runtime.PlatformRuntime)
+	runtimes := make(map[string]runtime.Runtime)
 	for _, rr := range rt {
 		ri, err := rr.Instance()
 		if err != nil {
 			log.G(ic.Context).WithError(err).Warn("could not load runtime instance due to initialization error")
 			continue
 		}
-		r := ri.(runtime.PlatformRuntime)
+		r := ri.(runtime.Runtime)
 		runtimes[r.ID()] = r
 	}
 
@@ -102,7 +102,7 @@ func initFunc(ic *plugin.InitContext) (interface{}, error) {
 }
 
 type local struct {
-	runtimes  map[string]runtime.PlatformRuntime
+	runtimes  map[string]runtime.Runtime
 	db        *metadata.DB
 	store     content.Store
 	publisher events.Publisher
@@ -625,7 +625,7 @@ func (l *local) getTaskFromContainer(ctx context.Context, container *containers.
 	return t, nil
 }
 
-func (l *local) getRuntime(name string) (runtime.PlatformRuntime, error) {
+func (l *local) getRuntime(name string) (runtime.Runtime, error) {
 	runtime, ok := l.runtimes[name]
 	if !ok {
 		return nil, status.Errorf(codes.NotFound, "unknown runtime %q", name)

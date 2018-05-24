@@ -24,7 +24,6 @@ import (
 
 const (
 	cgroupProcs    = "cgroup.procs"
-	cgroupTasks    = "tasks"
 	defaultDirPerm = 0755
 )
 
@@ -49,10 +48,8 @@ type Process struct {
 type Cgroup interface {
 	// New creates a new cgroup under the calling cgroup
 	New(string, *specs.LinuxResources) (Cgroup, error)
-	// Add adds a process to the cgroup (cgroup.procs)
+	// Add adds a process to the cgroup
 	Add(Process) error
-	// AddTask adds a process to the cgroup (tasks)
-	AddTask(Process) error
 	// Delete removes the cgroup as a whole
 	Delete() error
 	// MoveTo moves all the processes under the calling cgroup to the provided one

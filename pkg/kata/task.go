@@ -23,7 +23,8 @@ import (
 
 
     cgroups "github.com/containerd/cgroups"
-    exchange "github.com/containerd/containerd/events/exchange"
+	exchange "github.com/containerd/containerd/events/exchange"
+	log "github.com/containerd/containerd/log"
     "github.com/containerd/containerd/runtime"
     "github.com/gogo/protobuf/types"
 )
@@ -42,22 +43,22 @@ type Task struct {
     events    *exchange.Exchange
 }
 
-func newTask(ctx context.Context, id, namespace string, pid int, monitor runtime.TaskMonitor, events *exchange.Exchange, containerType string, opts runtime.CreateOpts, r *Runtime) (*Task, error) {
+func newTask(ctx context.Context, id, namespace string, pid uint32, monitor runtime.TaskMonitor, events *exchange.Exchange, containerType string, opts runtime.CreateOpts, r *Runtime) (*Task, error) {
 	var (
 		err error
 		cg  cgroups.Cgroup
 	)
 	if pid > 0 {
-		cg, err = cgroups.Load(cgroups.V1, cgroups.PidPath(pid))
+		cg, err = cgroups.Load(cgroups.V1, cgroups.PidPath(int(pid)))
 		if err != nil && err != cgroups.ErrCgroupDeleted {
 			return nil, err
 		}
     }
     
 	// create kata container
-	
+	log.G(ctx).Infoln("create sandbox")
 	r.CreateSandbox(ctx, id, opts)
-
+	log.G(ctx).Infoln("finish creating sandbox")
 	return &Task{
 		id:        id,
 		pid:       pid,

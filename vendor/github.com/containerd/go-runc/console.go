@@ -50,8 +50,7 @@ func NewConsoleSocket(path string) (*Socket, error) {
 // NewTempConsoleSocket returns a temp console socket for use with a container
 // On Close(), the socket is deleted
 func NewTempConsoleSocket() (*Socket, error) {
-	runtimeDir := os.Getenv("XDG_RUNTIME_DIR")
-	dir, err := ioutil.TempDir(runtimeDir, "pty")
+	dir, err := ioutil.TempDir("", "pty")
 	if err != nil {
 		return nil, err
 	}
@@ -66,11 +65,6 @@ func NewTempConsoleSocket() (*Socket, error) {
 	l, err := net.ListenUnix("unix", addr)
 	if err != nil {
 		return nil, err
-	}
-	if runtimeDir != "" {
-		if err := os.Chmod(abs, 0755|os.ModeSticky); err != nil {
-			return nil, err
-		}
 	}
 	return &Socket{
 		l:     l,

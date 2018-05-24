@@ -160,10 +160,12 @@ func (r *Runtime) Create(ctx context.Context, id string, opts runtime.CreateOpts
 		return nil, err
 	}
 	spec := s.(*runtimespec.Spec)
-	containerType := spec.Annotations[ContainerType]
+	containerType := spec.Annotations["ContainerType"]
 
 	// new task
-	t, err := newTask(id, namespace, pid, r.monitor, r.events, containerType, opts, r)
+	log.G(ctx).Infoln("enter newTask")
+	t, err := newTask(ctx, id, namespace, pid, r.monitor, r.events, containerType, opts, r)
+	log.G(ctx).Infoln("finish newTask")
 	if err != nil {
 		return nil, err
 	}
@@ -183,7 +185,7 @@ func (r *Runtime) Create(ctx context.Context, id string, opts runtime.CreateOpts
 	
 	r.events.Publish(ctx, runtime.TaskCreateEventTopic, &eventstypes.TaskCreate{
 		ContainerID: id,
-		Bundle:      bundle,
+		Bundle:      bundle.path,
 		Rootfs:      eventRootfs,
 		IO: &eventstypes.TaskIO{
 			Stdin:    opts.IO.Stdin,

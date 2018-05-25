@@ -19,8 +19,8 @@ package kata
 import (
 	"fmt"
     "context"
-    "sync"
-
+	"sync"
+	"time"
 
 	cgroups "github.com/containerd/cgroups"
 	eventstypes "github.com/containerd/containerd/api/events"
@@ -39,15 +39,19 @@ type Task struct {
 	pid       uint32
     status    runtime.Status
 
+	io        *pipeSet
     cg        cgroups.Cgroup
     monitor   runtime.TaskMonitor
-    events    *exchange.Exchange
+	events    *exchange.Exchange
+	
+	processes map[string]*Process
 }
 
 func newTask(ctx context.Context, id, namespace string, pid uint32, monitor runtime.TaskMonitor, events *exchange.Exchange, containerType string, opts runtime.CreateOpts, r *Runtime) (*Task, error) {
 	var (
 		err error
 		cg  cgroups.Cgroup
+		pset *pipeSet
 	)
 	if pid > 0 {
 		cg, err = cgroups.Load(cgroups.V1, cgroups.PidPath(int(pid)))
@@ -55,7 +59,16 @@ func newTask(ctx context.Context, id, namespace string, pid uint32, monitor runt
 			return nil, err
 		}
     }
-    
+	
+	if pset, err = newPipeSet(ctx, opts.IO); err != nil {
+		return nil, err
+	}
+	defer func() {
+		if err != nil {
+			pset.Close()
+		}
+	}()
+
 	// create kata container
 	log.G(ctx).Infoln("create sandbox")
 	r.CreateSandbox(ctx, id, opts)
@@ -63,7 +76,9 @@ func newTask(ctx context.Context, id, namespace string, pid uint32, monitor runt
 	return &Task{
 		id:        id,
 		pid:       pid,
+		status:	   runtime.CreatedStatus,
 		namespace: namespace,
+		io:        pset,
 		cg:        cg,
 		monitor:   monitor,
 		events:    events,
@@ -167,10 +182,51 @@ func (t *Task) Start(ctx context.Context) error {
 
 // Wait for the task to exit returning the status and timestamp
 func (t *Task) Wait(ctx context.Context) (*runtime.Exit, error) {
-    return nil, fmt.Errorf("task wait not implemented")
+	fmt.Println("task wait starts")
+	var wb chan struct{}
+	<-wb
+	fmt.Println("task wait ends")
+    return &runtime.Exit{
+		Pid:		t.pid,
+		Status: 	uint32(t.getStatus()),
+		Timestamp:	time.Time{},
+	}, nil
 }
 
 // State returns runtime information for the task
 func (t *Task) State(ctx context.Context) (runtime.State, error) {
-    return runtime.State{}, fmt.Errorf("task state not implemented")
+    var (
+		status     runtime.Status
+		// exitStatus uint32
+		// exitedAt   time.Time
+	)
+
+	// if p := t.getProcess(t.id); p != nil {
+	// 	status = p.Status()
+	// 	exitStatus = p.exitCode
+	// 	exitedAt = p.exitTime
+	// } else {
+	// 	status = t.getStatus()
+	// }
+
+	status = t.getStatus()
+
+	return runtime.State{
+		Status:     status,
+		Pid:        t.pid,
+		Stdin:      t.io.src.Stdin,
+		Stdout:     t.io.src.Stdout,
+		Stderr:     t.io.src.Stderr,
+		Terminal:   t.io.src.Terminal,
+		ExitStatus: 1,
+		ExitedAt:   time.Time{},
+	}, nil
+}
+
+func (t *Task) getStatus() runtime.Status {
+	t.mu.Lock()
+	status := t.status
+	t.mu.Unlock()
+
+	return status
 }

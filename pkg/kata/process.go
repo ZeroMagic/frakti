@@ -19,6 +19,7 @@ package kata
 import (
 	"fmt"
 	"context"
+	"time"
 
 	eventstypes "github.com/containerd/containerd/api/events"
 	"github.com/containerd/containerd/runtime"
@@ -28,6 +29,10 @@ import (
 type Process struct {
 	id string
 	t  *Task
+
+	waitBlock chan struct{}
+	status   int
+	exited   time.Time
 }
 
 // ID returns the process id
@@ -67,5 +72,12 @@ func (p *Process) Start(ctx context.Context) (err error) {
 
 // Wait for the process to exit
 func (p *Process) Wait(ctx context.Context) (*runtime.Exit, error) {
-	return nil, fmt.Errorf("process wait not implmented")
+	fmt.Errorf("process wait starts")
+	<-p.waitBlock
+
+	fmt.Errorf("process wait ends")
+	return &runtime.Exit{
+		Timestamp: p.exited,
+		Status:    uint32(p.status),
+	}, nil
 }

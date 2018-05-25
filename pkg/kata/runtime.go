@@ -92,6 +92,7 @@ func New(ic *plugin.InitContext) (interface{}, error) {
 		events:  ic.Events,
 	}
 
+	log.G(ic.Context).Infoln("start containerd-kata plugin")
 	// TODO(ZeroMagic): reconnect the existing kata containers
 
 	return r, nil
@@ -169,20 +170,22 @@ func (r *Runtime) Create(ctx context.Context, id string, opts runtime.CreateOpts
 	if err != nil {
 		return nil, err
 	}
+	log.G(ctx).Infoln("start adding task")
 	if err := r.tasks.Add(ctx, t); err != nil {
 		return nil, err
 	}
 	// after the task is created, add it to the monitor if it has a cgroup
 	// this can be different on a checkpoint/restore
-	if t.cg != nil {
-		if err = r.monitor.Monitor(t); err != nil {
-			if _, err := r.Delete(ctx, t); err != nil {
-				log.G(ctx).WithError(err).Error("deleting task after failed monitor")
-			}
-			return nil, err
-		}
-	}
-	
+	// log.G(ctx).Infoln("start monitoring")
+	// if t.cg != nil {
+	// 	if err = r.monitor.Monitor(t); err != nil {
+	// 		if _, err := r.Delete(ctx, t); err != nil {
+	// 			log.G(ctx).WithError(err).Error("deleting task after failed monitor")
+	// 		}
+	// 		return nil, err
+	// 	}
+	// }
+	log.G(ctx).Infoln("start publishing")
 	r.events.Publish(ctx, runtime.TaskCreateEventTopic, &eventstypes.TaskCreate{
 		ContainerID: id,
 		Bundle:      bundle.path,

@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"context"
 
+	eventstypes "github.com/containerd/containerd/api/events"
 	"github.com/containerd/containerd/runtime"
 )
 
@@ -36,30 +37,35 @@ func (p *Process) ID() string {
 
 // State returns the process state
 func (p *Process) State(ctx context.Context) (runtime.State, error) {
-	return runtime.State{}, fmt.Errorf("not implmented")
+	return runtime.State{}, fmt.Errorf("process not implmented")
 }
 
 // Kill signals a container
 func (p *Process) Kill(ctx context.Context, sig uint32, all bool) error {
-	return fmt.Errorf("not implmented")
+	return fmt.Errorf("process kill not implmented")
 }
 
 // ResizePty resizes the processes pty/console
 func (p *Process) ResizePty(ctx context.Context, size runtime.ConsoleSize) error {
-	return fmt.Errorf("not implmented")
+	return fmt.Errorf("process resizePty not implmented")
 }
 
 // CloseIO closes the processes stdin
 func (p *Process) CloseIO(ctx context.Context) error {
-	return fmt.Errorf("not implmented")
+	return fmt.Errorf("processs CloseIO not implmented")
 }
 
 // Start the container's user defined process
 func (p *Process) Start(ctx context.Context) (err error) {
-	return fmt.Errorf("not implmented")
+	p.t.events.Publish(ctx, runtime.TaskExecStartedEventTopic, &eventstypes.TaskExecStarted{
+		ContainerID: p.t.id,
+		Pid:         p.t.pid,
+		ExecID:      p.id,
+	})
+	return nil
 }
 
 // Wait for the process to exit
 func (p *Process) Wait(ctx context.Context) (*runtime.Exit, error) {
-	return nil, fmt.Errorf("not implmented")
+	return nil, fmt.Errorf("process wait not implmented")
 }

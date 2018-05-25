@@ -25,20 +25,20 @@ import (
 
 // CreateContainer creates a kata-runtime container
 func (r *Runtime) CreateContainer(ctx context.Context, id string, opts runtime.CreateOpts) error {
-	return fmt.Errorf("not implemented")
+	return fmt.Errorf("create container not implemented")
 }
 
 // StartContainer starts a kata-runtime container
 func (r *Runtime) StartContainer(ctx context.Context, id string, opts runtime.CreateOpts) error {
-	return fmt.Errorf("not implemented")
+	return fmt.Errorf("start container not implemented")
 }
 
 // StopContainer stops a kata-runtime container
 func (r *Runtime) StopContainer(ctx context.Context, id string, opts runtime.CreateOpts) error {
-	return fmt.Errorf("not implemented")
+	return fmt.Errorf("stop container not implemented")
 }
 
 // DeleteContainer deletes a kata-runtime container
 func (r *Runtime) DeleteContainer(ctx context.Context, id string, opts runtime.CreateOpts) error {
-	return fmt.Errorf("not implemented")
+	return fmt.Errorf("delete container not implemented")
 }

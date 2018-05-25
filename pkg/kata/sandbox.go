@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	"github.com/containerd/containerd/runtime"
+	log "github.com/containerd/containerd/log"
 	errors "github.com/pkg/errors"
 
 	vc "github.com/kata-containers/runtime/virtcontainers"
@@ -80,6 +81,7 @@ func (r *Runtime) CreateSandbox(ctx context.Context, id string, opts runtime.Cre
 		Containers: []vc.ContainerConfig{container},
 	}
 
+	log.G(ctx).Infoln("run kata sandbox")
 	_, err := vc.RunSandbox(sandboxConfig)
 	if err != nil {
 		return errors.Wrapf(err, "Could not run sandbox")
@@ -90,15 +92,15 @@ func (r *Runtime) CreateSandbox(ctx context.Context, id string, opts runtime.Cre
 
 // StartSandbox starts a kata-runtime sandbox
 func (r *Runtime) StartSandbox(ctx context.Context, id string, opts runtime.CreateOpts) error {
-	return fmt.Errorf("not implemented")
+	return fmt.Errorf("start sandbox not implemented")
 }
 
 // StopSandbox stops a kata-runtime sandbox
 func (r *Runtime) StopSandbox(ctx context.Context, id string, opts runtime.CreateOpts) error {
-	return fmt.Errorf("not implemented")
+	return fmt.Errorf("stop not implemented")
 }
 
 // DeleteSandbox deletes a kata-runtime sandbox
 func (r *Runtime) DeleteSandbox(ctx context.Context, id string, opts runtime.CreateOpts) error {
-	return fmt.Errorf("not implemented")
+	return fmt.Errorf("delete not implemented")
 }

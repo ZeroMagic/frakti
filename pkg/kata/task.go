@@ -82,6 +82,8 @@ func newTask(ctx context.Context, id, namespace string, pid uint32, monitor runt
 	log.G(ctx).Infoln("create sandbox")
 	r.CreateSandbox(ctx, id, opts)
 	log.G(ctx).Infoln("finish creating sandbox")
+	log.G(ctx).Infoln("start kata sandbox")
+	log.G(ctx).Infof("task id is %v, pid is %v  ", t.id, t.pid)
 	return &Task{
 		id:        id,
 		pid:       pid,
@@ -125,11 +127,13 @@ func (t *Task) Start(ctx context.Context) error {
 	}
 
 	log.G(ctx).Infoln("start kata sandbox")
+	log.G(ctx).Infof("task id is %v, pid is %v  ", t.id, t.pid)
 	_, err := vc.StartSandbox(t.id)
 	if err != nil {
 		return errors.Wrapf(err, "Could not start sandbox")
 	}
 
+	log.G(ctx).Infoln("start publishing")
 	t.events.Publish(ctx, runtime.TaskStartEventTopic, &eventstypes.TaskStart{
 		ContainerID: t.id,
 		Pid:         t.pid,

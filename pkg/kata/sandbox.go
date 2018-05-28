@@ -46,7 +46,7 @@ func (r *Runtime) CreateSandbox(ctx context.Context, id string, opts runtime.Cre
 	// Define the container command and bundle.
 	container := vc.ContainerConfig{
 		ID:     id,
-		RootFs: "/run/containerd/io.containerd.runtime.v1.kata-runtime/default/test5/rootfs",
+		RootFs: "/run/containerd/io.containerd.runtime.v1.kata-runtime/default/"+id+"/rootfs",
 		Cmd:    cmd,
 	}
 
@@ -54,8 +54,8 @@ func (r *Runtime) CreateSandbox(ctx context.Context, id string, opts runtime.Cre
 
 	// Sets the hypervisor configuration.
 	hypervisorConfig := vc.HypervisorConfig{
-		KernelPath:     "/usr/share/clear-containers/vmlinux.container",
-		ImagePath:      "/usr/share/clear-containers/clear-containers.img",
+		KernelPath:     "/usr/share/kata-containers/vmlinux.container",
+		ImagePath:      "/usr/share/kata-containers/kata-containers.img",
 		HypervisorPath: "/usr/bin/qemu-lite-system-x86_64",
 	}
 
@@ -72,6 +72,8 @@ func (r *Runtime) CreateSandbox(ctx context.Context, id string, opts runtime.Cre
 	// - Hypervisor is QEMU
 	// - Agent is hyperstart
 	sandboxConfig := vc.SandboxConfig{
+		ID:	id,
+
 		VMConfig: vmConfig,
 
 		HypervisorType:   vc.QemuHypervisor,

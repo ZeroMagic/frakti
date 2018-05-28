@@ -36,6 +36,8 @@ import (
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 	runtimespec "github.com/opencontainers/runtime-spec/specs-go"
 	errors "github.com/pkg/errors"
+
+	
 	
 )
 
@@ -155,17 +157,23 @@ func (r *Runtime) Create(ctx context.Context, id string, opts runtime.CreateOpts
 		})
 	}
 
+	log.G(ctx).Infof("bundle is %v\n", bundle)
+
+	log.G(ctx).Infof("eventRootfs is %v\n", eventRootfs)
+
 	// With annotation, we can tell sandbox from container
 	s, err := typeurl.UnmarshalAny(opts.Spec)
 	if err != nil {
 		return nil, err
 	}
 	spec := s.(*runtimespec.Spec)
+	log.G(ctx).Infof("spec is %v\n", spec)
 	containerType := spec.Annotations["ContainerType"]
+	log.G(ctx).Infof("The container type is %s\n", containerType)
 
 	// new task
 	log.G(ctx).Infoln("enter newTask")
-	t, err := newTask(ctx, id, namespace, pid, r.monitor, r.events, containerType, opts, r)
+	t, err := newTask(ctx, id, namespace, pid, r.monitor, r.events, opts, r, bundle)
 	log.G(ctx).Infoln("finish newTask")
 	if err != nil {
 		return nil, err

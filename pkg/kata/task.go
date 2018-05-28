@@ -27,7 +27,12 @@ import (
 	exchange "github.com/containerd/containerd/events/exchange"
 	log "github.com/containerd/containerd/log"
     "github.com/containerd/containerd/runtime"
-    "github.com/gogo/protobuf/types"
+	"github.com/gogo/protobuf/types"
+	"github.com/pkg/errors"
+	
+	"k8s.io/frakti/pkg/kata/proc"
+
+	vc "github.com/kata-containers/runtime/virtcontainers"
 )
 
 // Task on a hypervisor based system
@@ -37,37 +42,41 @@ type Task struct {
 	id        string
 	namespace string
 	pid       uint32
-    status    runtime.Status
 
-	io        *pipeSet
     cg        cgroups.Cgroup
     monitor   runtime.TaskMonitor
 	events    *exchange.Exchange
 	
-	processes map[string]*Process
+	processeList map[string]proc.Process
+	pidPool   *pidPool
 }
 
-func newTask(ctx context.Context, id, namespace string, pid uint32, monitor runtime.TaskMonitor, events *exchange.Exchange, containerType string, opts runtime.CreateOpts, r *Runtime) (*Task, error) {
+func newTask(ctx context.Context, id, namespace string, pid uint32, monitor runtime.TaskMonitor, events *exchange.Exchange, opts runtime.CreateOpts, r *Runtime, bundle *bundle) (*Task, error) {
 	var (
-		err error
 		cg  cgroups.Cgroup
-		pset *pipeSet
+		err error
 	)
 	if pid > 0 {
 		cg, err = cgroups.Load(cgroups.V1, cgroups.PidPath(int(pid)))
 		if err != nil && err != cgroups.ErrCgroupDeleted {
 			return nil, err
 		}
-    }
-	
-	if pset, err = newPipeSet(ctx, opts.IO); err != nil {
-		return nil, err
 	}
-	defer func() {
-		if err != nil {
-			pset.Close()
-		}
-	}()
+	
+	config :=  &proc.InitConfig{
+		ID:		id,
+		Rootfs:	opts.Rootfs,
+	}
+
+
+	log.G(ctx).Infoln("new init process")
+	init, err := proc.NewInit(ctx, bundle.path, bundle.workDir, namespace, int(pid), config)
+	if err != nil {
+		return nil, errors.Errorf("new init process error")
+	}
+
+	processeList := make(map[string]proc.Process)
+	processeList[fmt.Sprintf("%d", pid)] = init
 
 	// create kata container
 	log.G(ctx).Infoln("create sandbox")
@@ -76,12 +85,12 @@ func newTask(ctx context.Context, id, namespace string, pid uint32, monitor runt
 	return &Task{
 		id:        id,
 		pid:       pid,
-		status:	   runtime.CreatedStatus,
 		namespace: namespace,
-		io:        pset,
 		cg:        cg,
 		monitor:   monitor,
 		events:    events,
+		processeList: processeList,
+		pidPool:   r.pidPool,
 	}, nil
 }
 
@@ -97,6 +106,65 @@ func (t *Task) Info() runtime.TaskInfo {
 		Runtime:   pluginID,
 		Namespace: t.namespace,
 	}
+}
+
+// Start the task
+func (t *Task) Start(ctx context.Context) error {
+
+    t.mu.Lock()
+	hasCgroup := t.cg != nil
+	t.mu.Unlock()
+	if !hasCgroup {
+		cg, err := cgroups.Load(cgroups.V1, cgroups.PidPath(int(t.pid)))
+		if err != nil {
+			return err
+		}
+		t.mu.Lock()
+		t.cg = cg
+		t.mu.Unlock()
+	}
+
+	log.G(ctx).Infoln("start kata sandbox")
+	_, err := vc.StartSandbox(t.id)
+	if err != nil {
+		return errors.Wrapf(err, "Could not start sandbox")
+	}
+
+	t.events.Publish(ctx, runtime.TaskStartEventTopic, &eventstypes.TaskStart{
+		ContainerID: t.id,
+		Pid:         t.pid,
+	})
+	return nil
+}
+
+// State returns runtime information for the task
+func (t *Task) State(ctx context.Context) (runtime.State, error) {
+    var (
+		status     runtime.Status
+		// exitStatus uint32
+		// exitedAt   time.Time
+	)
+
+	// if p := t.getProcess(t.id); p != nil {
+	// 	status = p.Status()
+	// 	exitStatus = p.exitCode
+	// 	exitedAt = p.exitTime
+	// } else {
+	// 	status = t.getStatus()
+	// }
+
+	status = t.getStatus()
+
+	return runtime.State{
+		Status:     status,
+		Pid:        t.pid,
+		Stdin:      "",
+		Stdout:     "",
+		Stderr:     "",
+		Terminal:   true,
+		ExitStatus: 1,
+		ExitedAt:   time.Time{},
+	}, nil
 }
 
 // Pause pauses the container process
@@ -159,33 +227,9 @@ func (t *Task) ResizePty(ctx context.Context, size runtime.ConsoleSize) error {
 	return fmt.Errorf("task resizePty not implemented")
 }
 
-// Start the task
-func (t *Task) Start(ctx context.Context) error {
-    t.mu.Lock()
-	hasCgroup := t.cg != nil
-	t.mu.Unlock()
-	if !hasCgroup {
-		cg, err := cgroups.Load(cgroups.V1, cgroups.PidPath(int(t.pid)))
-		if err != nil {
-			return err
-		}
-		t.mu.Lock()
-		t.cg = cg
-		t.mu.Unlock()
-	}
-	t.events.Publish(ctx, runtime.TaskStartEventTopic, &eventstypes.TaskStart{
-		ContainerID: t.id,
-		Pid:         uint32(t.pid),
-	})
-	return nil
-}
-
 // Wait for the task to exit returning the status and timestamp
 func (t *Task) Wait(ctx context.Context) (*runtime.Exit, error) {
-	fmt.Println("task wait starts")
-	var wb chan struct{}
-	<-wb
-	fmt.Println("task wait ends")
+	t.processeList[fmt.Sprintf("%d", t.pid)].Wait()
     return &runtime.Exit{
 		Pid:		t.pid,
 		Status: 	uint32(t.getStatus()),
@@ -193,39 +237,9 @@ func (t *Task) Wait(ctx context.Context) (*runtime.Exit, error) {
 	}, nil
 }
 
-// State returns runtime information for the task
-func (t *Task) State(ctx context.Context) (runtime.State, error) {
-    var (
-		status     runtime.Status
-		// exitStatus uint32
-		// exitedAt   time.Time
-	)
-
-	// if p := t.getProcess(t.id); p != nil {
-	// 	status = p.Status()
-	// 	exitStatus = p.exitCode
-	// 	exitedAt = p.exitTime
-	// } else {
-	// 	status = t.getStatus()
-	// }
-
-	status = t.getStatus()
-
-	return runtime.State{
-		Status:     status,
-		Pid:        t.pid,
-		Stdin:      t.io.src.Stdin,
-		Stdout:     t.io.src.Stdout,
-		Stderr:     t.io.src.Stderr,
-		Terminal:   t.io.src.Terminal,
-		ExitStatus: 1,
-		ExitedAt:   time.Time{},
-	}, nil
-}
-
 func (t *Task) getStatus() runtime.Status {
 	t.mu.Lock()
-	status := t.status
+	status := runtime.CreatedStatus
 	t.mu.Unlock()
 
 	return status

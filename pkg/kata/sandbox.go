@@ -46,9 +46,11 @@ func (r *Runtime) CreateSandbox(ctx context.Context, id string, opts runtime.Cre
 	// Define the container command and bundle.
 	container := vc.ContainerConfig{
 		ID:     id,
-		RootFs: opts.Rootfs[0].Source,
+		RootFs: "/run/containerd/io.containerd.runtime.v1.kata-runtime/default/test5/rootfs",
 		Cmd:    cmd,
 	}
+
+	log.G(ctx).Infof("container config:  %v \n", container)
 
 	// Sets the hypervisor configuration.
 	hypervisorConfig := vc.HypervisorConfig{
@@ -81,10 +83,10 @@ func (r *Runtime) CreateSandbox(ctx context.Context, id string, opts runtime.Cre
 		Containers: []vc.ContainerConfig{container},
 	}
 
-	log.G(ctx).Infoln("run kata sandbox")
-	_, err := vc.RunSandbox(sandboxConfig)
+	log.G(ctx).Infoln("create kata sandbox")
+	_, err := vc.CreateSandbox(sandboxConfig)
 	if err != nil {
-		return errors.Wrapf(err, "Could not run sandbox")
+		return errors.Wrapf(err, "Could not create sandbox")
 	}
 
 	return err
@@ -92,7 +94,13 @@ func (r *Runtime) CreateSandbox(ctx context.Context, id string, opts runtime.Cre
 
 // StartSandbox starts a kata-runtime sandbox
 func (r *Runtime) StartSandbox(ctx context.Context, id string, opts runtime.CreateOpts) error {
-	return fmt.Errorf("start sandbox not implemented")
+	log.G(ctx).Infoln("start kata sandbox")
+	_, err := vc.StartSandbox(id)
+	if err != nil {
+		return errors.Wrapf(err, "Could not start sandbox")
+	}
+
+	return err
 }
 
 // StopSandbox stops a kata-runtime sandbox

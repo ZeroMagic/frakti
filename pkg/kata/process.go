@@ -29,10 +29,6 @@ import (
 type Process struct {
 	id string
 	t  *Task
-
-	waitBlock chan struct{}
-	status   int
-	exited   time.Time
 }
 
 // ID returns the process id
@@ -72,12 +68,10 @@ func (p *Process) Start(ctx context.Context) (err error) {
 
 // Wait for the process to exit
 func (p *Process) Wait(ctx context.Context) (*runtime.Exit, error) {
-	fmt.Errorf("process wait starts")
-	<-p.waitBlock
-
-	fmt.Errorf("process wait ends")
+	// init := p.t.processeList[fmt.Sprintf("%d", p.t.pid)]
+	// init.Wait()
 	return &runtime.Exit{
-		Timestamp: p.exited,
-		Status:    uint32(p.status),
+		Timestamp: time.Time{},
+		Status:    uint32(0),
 	}, nil
 }

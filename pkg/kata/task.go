@@ -47,27 +47,23 @@ type Task struct {
     monitor   runtime.TaskMonitor
 	events    *exchange.Exchange
 	
-	processeList map[string]proc.Process
+	processList map[string]proc.Process
+
+	// this field may be unnecessary
 	pidPool   *pidPool
 }
 
-func newTask(ctx context.Context, id, namespace string, pid uint32, monitor runtime.TaskMonitor, events *exchange.Exchange, opts runtime.CreateOpts, r *Runtime, bundle *bundle) (*Task, error) {
-	var (
-		cg  cgroups.Cgroup
-		err error
-	)
-	if pid > 0 {
-		cg, err = cgroups.Load(cgroups.V1, cgroups.PidPath(int(pid)))
-		if err != nil && err != cgroups.ErrCgroupDeleted {
-			return nil, err
-		}
-	}
+func newTask(ctx context.Context, id, namespace string, pid uint32, monitor runtime.TaskMonitor, events *exchange.Exchange, opts runtime.CreateOpts, bundle *bundle) (*Task, error) {
+	// TODO(ZeroMagic): how to load cgroup when reconnecting
 	
 	config :=  &proc.InitConfig{
-		ID:		id,
-		Rootfs:	opts.Rootfs,
+		ID:			id,
+		Rootfs:		opts.Rootfs,
+		Terminal: 	opts.IO.Terminal,
+		Stdin:      opts.IO.Stdin,
+		Stdout:     opts.IO.Stdout,
+		Stderr:     opts.IO.Stderr,
 	}
-
 
 	log.G(ctx).Infoln("new init process")
 	init, err := proc.NewInit(ctx, bundle.path, bundle.workDir, namespace, int(pid), config)
@@ -75,24 +71,18 @@ func newTask(ctx context.Context, id, namespace string, pid uint32, monitor runt
 		return nil, errors.Errorf("new init process error")
 	}
 
-	processeList := make(map[string]proc.Process)
-	processeList[fmt.Sprintf("%d", pid)] = init
+	processList := make(map[string]proc.Process)
+	processList[fmt.Sprintf("%d", pid)] = init
 
-	// create kata container
-	log.G(ctx).Infoln("create sandbox")
-	r.CreateSandbox(ctx, id, opts)
-	log.G(ctx).Infoln("finish creating sandbox")
-	log.G(ctx).Infoln("start kata sandbox")
-	log.G(ctx).Infof("task id is %v, pid is %v  ", t.id, t.pid)
+	log.G(ctx).Infof("task id is %v, pid is %v  ", id, pid)
 	return &Task{
 		id:        id,
 		pid:       pid,
 		namespace: namespace,
-		cg:        cg,
 		monitor:   monitor,
 		events:    events,
-		processeList: processeList,
-		pidPool:   r.pidPool,
+		processList: processList,
+		// pidPool:   r.pidPool,
 	}, nil
 }
 
@@ -116,6 +106,14 @@ func (t *Task) Start(ctx context.Context) error {
     t.mu.Lock()
 	hasCgroup := t.cg != nil
 	t.mu.Unlock()
+
+	log.G(ctx).Infoln("Task: start kata sandbox")
+	log.G(ctx).Infof("Task: task id is %v, pid is %v  ", t.id, t.pid)
+	_, err := vc.StartSandbox(t.id)
+	if err != nil {
+		return errors.Wrapf(err, "Could not start sandbox")
+	}
+
 	if !hasCgroup {
 		cg, err := cgroups.Load(cgroups.V1, cgroups.PidPath(int(t.pid)))
 		if err != nil {
@@ -126,14 +124,7 @@ func (t *Task) Start(ctx context.Context) error {
 		t.mu.Unlock()
 	}
 
-	log.G(ctx).Infoln("start kata sandbox")
-	log.G(ctx).Infof("task id is %v, pid is %v  ", t.id, t.pid)
-	_, err := vc.StartSandbox(t.id)
-	if err != nil {
-		return errors.Wrapf(err, "Could not start sandbox")
-	}
-
-	log.G(ctx).Infoln("start publishing")
+	log.G(ctx).Infoln("Task: start publishing")
 	t.events.Publish(ctx, runtime.TaskStartEventTopic, &eventstypes.TaskStart{
 		ContainerID: t.id,
 		Pid:         t.pid,
@@ -233,7 +224,7 @@ func (t *Task) ResizePty(ctx context.Context, size runtime.ConsoleSize) error {
 
 // Wait for the task to exit returning the status and timestamp
 func (t *Task) Wait(ctx context.Context) (*runtime.Exit, error) {
-	t.processeList[fmt.Sprintf("%d", t.pid)].Wait()
+	t.processList[fmt.Sprintf("%d", t.pid)].Wait()
     return &runtime.Exit{
 		Pid:		t.pid,
 		Status: 	uint32(t.getStatus()),

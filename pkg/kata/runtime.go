@@ -33,6 +33,7 @@ import (
 	"github.com/containerd/containerd/plugin"
 	"github.com/containerd/containerd/runtime"
 	"github.com/containerd/typeurl"
+	"github.com/containerd/cri/pkg/annotations"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 	runtimespec "github.com/opencontainers/runtime-spec/specs-go"
 	errors "github.com/pkg/errors"
@@ -94,7 +95,8 @@ func New(ic *plugin.InitContext) (interface{}, error) {
 		events:  ic.Events,
 	}
 
-	log.G(ic.Context).Infoln("start containerd-kata plugin")
+	log.G(ic.Context).Infoln("Runtime: start containerd-kata plugin")
+
 	// TODO(ZeroMagic): reconnect the existing kata containers
 
 	return r, nil
@@ -110,7 +112,9 @@ func (r *Runtime) Create(ctx context.Context, id string, opts runtime.CreateOpts
 	
 	// TODO(ZeroMagic): create a new task
 
-	// get namespace
+	log.G(ctx).Infof("Runtime: CreateOpts is %v", opts)
+
+	// 1. get namespace
 	namespace, err := namespaces.NamespaceRequired(ctx)
 	if err != nil {
 		return nil, err
@@ -119,10 +123,11 @@ func (r *Runtime) Create(ctx context.Context, id string, opts runtime.CreateOpts
 	if err := identifiers.Validate(id); err != nil {
 		return nil, errors.Wrapf(err, "invalid task id")
 	}
+	log.G(ctx).Infof("Runtime: namespace is %v", namespace)
 
-	// Does kata-runtime have some config ?
+	// Does kata-runtime have some config objects ?
 
-	// create bundle to store local image
+	// 2. create bundle to store local image
 	bundle, err := newBundle(id,
 		filepath.Join(r.state, namespace),
 		filepath.Join(r.root, namespace),
@@ -135,8 +140,9 @@ func (r *Runtime) Create(ctx context.Context, id string, opts runtime.CreateOpts
 			bundle.Delete()
 		}
 	}()
+	log.G(ctx).Infof("Runtime: bundle is %v", bundle)
 
-	// get pid for application
+	// 3. get pid for application
 	var pid uint32
 	if pid, err = r.pidPool.Get(); err != nil {
 		return nil, err
@@ -146,8 +152,9 @@ func (r *Runtime) Create(ctx context.Context, id string, opts runtime.CreateOpts
 			r.pidPool.Put(pid)
 		}
 	}()
+	log.G(ctx).Infof("Runtime: pid is %v", pid)
 
-	// mount
+	// 4. mount
 	var eventRootfs []*types.Mount
 	for _, m := range opts.Rootfs {
 		eventRootfs = append(eventRootfs, &types.Mount{
@@ -156,29 +163,25 @@ func (r *Runtime) Create(ctx context.Context, id string, opts runtime.CreateOpts
 			Options: m.Options,
 		})
 	}
+	log.G(ctx).Infof("Runtime: eventRootfs is %v", eventRootfs)
 
-	log.G(ctx).Infof("bundle is %v\n", bundle)
-
-	log.G(ctx).Infof("eventRootfs is %v\n", eventRootfs)
-
-	// With annotation, we can tell sandbox from container
+	// 5. With annotation, we can tell sandbox from container
 	s, err := typeurl.UnmarshalAny(opts.Spec)
 	if err != nil {
 		return nil, err
 	}
 	spec := s.(*runtimespec.Spec)
-	log.G(ctx).Infof("spec is %v\n", spec)
-	containerType := spec.Annotations["ContainerType"]
-	log.G(ctx).Infof("The container type is %s\n", containerType)
+	containerType := spec.Annotations[annotations.ContainerType]
+	log.G(ctx).Infof("Runtime: ContainerType is %s\n", containerType)
 
 	// new task
-	log.G(ctx).Infoln("enter newTask")
-	t, err := newTask(ctx, id, namespace, pid, r.monitor, r.events, opts, r, bundle)
-	log.G(ctx).Infoln("finish newTask")
+	log.G(ctx).Infoln("Runtime: enter newTask")
+	t, err := newTask(ctx, id, namespace, pid, r.monitor, r.events, opts, bundle)
+	log.G(ctx).Infoln("Runtime: finish newTask")
 	if err != nil {
 		return nil, err
 	}
-	log.G(ctx).Infoln("start adding task")
+	log.G(ctx).Infoln("Runtime: start adding task")
 	if err := r.tasks.Add(ctx, t); err != nil {
 		return nil, err
 	}
@@ -193,7 +196,7 @@ func (r *Runtime) Create(ctx context.Context, id string, opts runtime.CreateOpts
 	// 		return nil, err
 	// 	}
 	// }
-	log.G(ctx).Infoln("start publishing")
+	log.G(ctx).Infoln("Runtime: start publishing")
 	r.events.Publish(ctx, runtime.TaskCreateEventTopic, &eventstypes.TaskCreate{
 		ContainerID: id,
 		Bundle:      bundle.path,

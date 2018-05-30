@@ -13,12 +13,15 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
 package proc
 
 import (
 	mount "github.com/containerd/containerd/mount"
+	"github.com/gogo/protobuf/types"
 )
 
+// InitConfig hold task creation configuration
 type InitConfig struct {
 	ID               string
 	Runtime          string
@@ -27,4 +30,20 @@ type InitConfig struct {
 	Stdin            string
 	Stdout           string
 	Stderr           string
+}
+
+// ExecConfig holds exec creation configuration
+type ExecConfig struct {
+	ID       string
+	Terminal bool
+	Stdin    string
+	Stdout   string
+	Stderr   string
+	Spec     *types.Any
+}
+
+// CheckpointConfig holds task checkpoint configuration
+type CheckpointConfig struct {
+	Path    string
+	Options *types.Any
 }

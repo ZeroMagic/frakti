@@ -1,19 +1,17 @@
-// +build !windows
-
 /*
-   Copyright The containerd Authors.
+Copyright 2018 The Kubernetes Authors.
 
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+    http://www.apache.org/licenses/LICENSE-2.0
 
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 */
 
 package proc
@@ -22,6 +20,9 @@ import (
 	"context"
 	"io"
 	"time"
+
+	"github.com/containerd/console"
+	"github.com/pkg/errors"
 )
 
 // Stdio of a process
@@ -39,6 +40,8 @@ func (s Stdio) IsNull() bool {
 
 // Process on a linux system
 type Process interface {	
+	State
+
 	// ID returns the id for the process
 	ID() string
 	// Pid returns the pid for the process
@@ -56,3 +59,35 @@ type Process interface {
 	// Wait blocks until the process has exited
 	Wait()
 }
+
+// State of a process
+type State interface {
+	// Resize resizes the process console
+	Resize(ws console.WinSize) error
+	// Start execution of the process
+	Start(context.Context) error
+	// Delete deletes the process and its resourcess
+	Delete(context.Context) error
+	// Kill kills the process
+	Kill(context.Context, uint32, bool) error
+	// SetExited sets the exit status for the process
+	SetExited(status int)
+}
+
+func stateName(v interface{}) string {
+	switch v.(type) {
+	case *runningState, *execRunningState:
+		return "running"
+	case *createdState, *execCreatedState:
+		return "created"
+	case *pausedState:
+		return "paused"
+	case *deletedState:
+		return "deleted"
+	case *stoppedState:
+		return "stopped"
+	}
+	panic(errors.Errorf("invalid state %v", v))
+}
+
+

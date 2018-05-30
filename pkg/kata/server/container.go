@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package kata
+package server
 
 import (
 	"context"
@@ -24,21 +24,21 @@ import (
 )
 
 // CreateContainer creates a kata-runtime container
-func (r *Runtime) CreateContainer(ctx context.Context, id string, opts runtime.CreateOpts) error {
+func CreateContainer(ctx context.Context, id string, opts runtime.CreateOpts) error {
 	return fmt.Errorf("create container not implemented")
 }
 
 // StartContainer starts a kata-runtime container
-func (r *Runtime) StartContainer(ctx context.Context, id string, opts runtime.CreateOpts) error {
+func StartContainer(ctx context.Context, id string, opts runtime.CreateOpts) error {
 	return fmt.Errorf("start container not implemented")
 }
 
 // StopContainer stops a kata-runtime container
-func (r *Runtime) StopContainer(ctx context.Context, id string, opts runtime.CreateOpts) error {
+func StopContainer(ctx context.Context, id string, opts runtime.CreateOpts) error {
 	return fmt.Errorf("stop container not implemented")
 }
 
 // DeleteContainer deletes a kata-runtime container
-func (r *Runtime) DeleteContainer(ctx context.Context, id string, opts runtime.CreateOpts) error {
+func DeleteContainer(ctx context.Context, id string, opts runtime.CreateOpts) error {
 	return fmt.Errorf("delete container not implemented")
 }

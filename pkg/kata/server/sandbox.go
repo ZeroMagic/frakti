@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package kata
+package server
 
 import (
 	"context"
@@ -29,7 +29,7 @@ import (
 )
 
 // CreateSandbox creates a kata-runtime sandbox
-func (r *Runtime) CreateSandbox(ctx context.Context, id string, opts runtime.CreateOpts) error {
+func CreateSandbox(ctx context.Context, id string) error {
 	envs := []vc.EnvVar{
 		{
 			Var:   "PATH",
@@ -85,7 +85,7 @@ func (r *Runtime) CreateSandbox(ctx context.Context, id string, opts runtime.Cre
 		Containers: []vc.ContainerConfig{container},
 	}
 
-	log.G(ctx).Infoln("create kata sandbox")
+	log.G(ctx).Infoln("Sandbox: create kata sandbox")
 	_, err := vc.CreateSandbox(sandboxConfig)
 	if err != nil {
 		return errors.Wrapf(err, "Could not create sandbox")
@@ -95,8 +95,8 @@ func (r *Runtime) CreateSandbox(ctx context.Context, id string, opts runtime.Cre
 }
 
 // StartSandbox starts a kata-runtime sandbox
-func (r *Runtime) StartSandbox(ctx context.Context, id string, opts runtime.CreateOpts) error {
-	log.G(ctx).Infoln("start kata sandbox")
+func StartSandbox(ctx context.Context, id string, opts runtime.CreateOpts) error {
+	log.G(ctx).Infoln("Sandbox: start kata sandbox")
 	_, err := vc.StartSandbox(id)
 	if err != nil {
 		return errors.Wrapf(err, "Could not start sandbox")
@@ -106,11 +106,11 @@ func (r *Runtime) StartSandbox(ctx context.Context, id string, opts runtime.Crea
 }
 
 // StopSandbox stops a kata-runtime sandbox
-func (r *Runtime) StopSandbox(ctx context.Context, id string, opts runtime.CreateOpts) error {
+func StopSandbox(ctx context.Context, id string, opts runtime.CreateOpts) error {
 	return fmt.Errorf("stop not implemented")
 }
 
 // DeleteSandbox deletes a kata-runtime sandbox
-func (r *Runtime) DeleteSandbox(ctx context.Context, id string, opts runtime.CreateOpts) error {
+func DeleteSandbox(ctx context.Context, id string, opts runtime.CreateOpts) error {
 	return fmt.Errorf("delete not implemented")
 }

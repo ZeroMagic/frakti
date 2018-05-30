@@ -60,7 +60,10 @@ func CreateSandbox(ctx context.Context, id string) error {
 	}
 
 	// Use hyperstart default values for the agent.
-	agConfig := vc.HyperConfig{}
+	agConfig := vc.HyperConfig{
+		SockCtlName:	"/run/vc/sbs/"+id+"/hyper.sock"
+		SockTtyName:	"/run/vc/sbs/"+id+"/tty.sock"
+	}
 
 	// VM resources
 	vmConfig := vc.Resources{
@@ -88,7 +91,9 @@ func CreateSandbox(ctx context.Context, id string) error {
 	log.G(ctx).Infoln("Sandbox: create kata sandbox")
 
 	vm, err := vc.CreateSandbox(sandboxConfig)
+	log.G(ctx).Infoln("Sandbox: config！！！")
 	if err != nil {
+		log.G(ctx).Infoln("Sandbox: config error！！！")
 		return errors.Wrapf(err, "Could not create sandbox")
 	}
 	log.G(ctx).Infof("Sandbox: create, VCSandbox is %v", vm)

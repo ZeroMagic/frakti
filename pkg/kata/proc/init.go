@@ -140,7 +140,10 @@ func NewInit(ctx context.Context, path, workDir, namespace string, pid int, conf
 
 	// create kata container
 	log.G(ctx).Infoln("Init: create sandbox")
-	server.CreateSandbox(ctx, config.ID)
+	err = server.CreateSandbox(ctx, config.ID)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create sandbox")
+	}
 	log.G(ctx).Infoln("Init: finish creating sandbox")
 
 	if config.Stdin != "" {

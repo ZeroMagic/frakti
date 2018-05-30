@@ -67,7 +67,7 @@ func newTask(ctx context.Context, id, namespace string, pid uint32, monitor runt
 	log.G(ctx).Infoln("new init process")
 	init, err := proc.NewInit(ctx, bundle.path, bundle.workDir, namespace, int(pid), config)
 	if err != nil {
-		return nil, errors.Errorf("new init process error")
+		return nil, errors.Wrap(err, "new init process error")
 	}
 
 	processList := make(map[string]proc.Process)

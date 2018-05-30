@@ -233,6 +233,13 @@ func (p *Init) resize(ws console.WinSize) error {
 }
 
 func (p *Init) start(context context.Context) error {
+	log.G(ctx).Infoln("Init: start kata sandbox")
+	log.G(ctx).Infof("Init: init process id is %v, pid is %v  ", p.id, p.pid)
+	sandbox, err := vc.StartSandbox(p.id)
+	if err != nil {
+		return errors.Wrapf(err, "Could not start sandbox")
+	}
+	log.G(ctx).Infof("Init: VCSandbox is %v", sandbox)
 	return fmt.Errorf("init process start is not implemented")
 }
 

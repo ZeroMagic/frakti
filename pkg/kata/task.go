@@ -103,29 +103,25 @@ func (t *Task) Info() runtime.TaskInfo {
 // Start the task
 func (t *Task) Start(ctx context.Context) error {
 
-    t.mu.Lock()
-	hasCgroup := t.cg != nil
-	t.mu.Unlock()
+    // t.mu.Lock()
+	// hasCgroup := t.cg != nil
+	// t.mu.Unlock()
 
-	log.G(ctx).Infoln("Task: start kata sandbox")
-	log.G(ctx).Infof("Task: task id is %v, pid is %v  ", t.id, t.pid)
-	_, err := vc.StartSandbox(t.id)
-	if err != nil {
-		return errors.Wrapf(err, "Could not start sandbox")
-	}
+	t.processList[fmt.Sprintf("%d", t.pid)].Start()
 
-	if !hasCgroup {
-		log.G(ctx).Infoln("Task: load cgroups")
-		cg, err := cgroups.Load(cgroups.V1, cgroups.PidPath(int(t.pid)))
-		if err != nil {
-			return err
-		}
-		t.mu.Lock()
-		t.cg = cg
-		t.mu.Unlock()
-		if err := t.monitor.Monitor(t); err != nil {
-			return err
-		}
+
+	// if !hasCgroup {
+	// 	log.G(ctx).Infoln("Task: load cgroups")
+	// 	cg, err := cgroups.Load(cgroups.V1, cgroups.PidPath(int(t.pid)))
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// 	t.mu.Lock()
+	// 	t.cg = cg
+	// 	t.mu.Unlock()
+	// 	if err := t.monitor.Monitor(t); err != nil {
+	// 		return err
+	// 	}
 	}
 
 	log.G(ctx).Infoln("Task: start publishing")

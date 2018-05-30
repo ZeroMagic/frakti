@@ -235,7 +235,7 @@ func (p *Init) resize(ws console.WinSize) error {
 func (p *Init) start(ctx context.Context) error {
 	log.G(ctx).Infoln("Init: start kata sandbox")
 	log.G(ctx).Infof("Init: init process id is %v, pid is %v  ", p.id, p.pid)
-	server.StartSandbox(p.id)
+	server.StartSandbox(ctx, p.id)
 	return fmt.Errorf("init process start is not implemented")
 }
 

@@ -86,11 +86,12 @@ func CreateSandbox(ctx context.Context, id string) error {
 	}
 
 	log.G(ctx).Infoln("Sandbox: create kata sandbox")
+
 	vm, err := vc.CreateSandbox(sandboxConfig)
 	if err != nil {
 		return errors.Wrapf(err, "Could not create sandbox")
 	}
-	log.G(ctx).Infof("Sandbox: create, VCSandboxis %v", vm)
+	log.G(ctx).Infof("Sandbox: create, VCSandbox is %v", vm)
 
 	return err
 }

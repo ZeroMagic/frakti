@@ -32,7 +32,6 @@ import (
 	
 	"k8s.io/frakti/pkg/kata/proc"
 
-	vc "github.com/kata-containers/runtime/virtcontainers"
 )
 
 // Task on a hypervisor based system
@@ -107,7 +106,7 @@ func (t *Task) Start(ctx context.Context) error {
 	// hasCgroup := t.cg != nil
 	// t.mu.Unlock()
 
-	t.processList[fmt.Sprintf("%d", t.pid)].Start()
+	t.processList[fmt.Sprintf("%d", t.pid)].Start(ctx)
 
 
 	// if !hasCgroup {
@@ -122,7 +121,7 @@ func (t *Task) Start(ctx context.Context) error {
 	// 	if err := t.monitor.Monitor(t); err != nil {
 	// 		return err
 	// 	}
-	}
+	// }
 
 	log.G(ctx).Infoln("Task: start publishing")
 	t.events.Publish(ctx, runtime.TaskStartEventTopic, &eventstypes.TaskStart{

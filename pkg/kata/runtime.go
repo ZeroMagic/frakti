@@ -178,10 +178,12 @@ func (r *Runtime) Create(ctx context.Context, id string, opts runtime.CreateOpts
 	// new task
 	log.G(ctx).Infoln("Runtime: enter newTask")
 	t, err := newTask(ctx, id, namespace, pid, r.monitor, r.events, opts, bundle)
-	log.G(ctx).Infoln("Runtime: finish newTask")
 	if err != nil {
+		log.G(ctx).Infoln("Runtime: error newTask")
 		return nil, err
 	}
+	log.G(ctx).Infoln("Runtime: finish newTask")
+
 	log.G(ctx).Infoln("Runtime: start adding task")
 	if err := r.tasks.Add(ctx, t); err != nil {
 		return nil, err

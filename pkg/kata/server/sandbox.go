@@ -60,10 +60,7 @@ func CreateSandbox(ctx context.Context, id string) error {
 	}
 
 	// Use hyperstart default values for the agent.
-	agConfig := vc.HyperConfig{
-		SockCtlName:	"/run/vc/sbs/"+id+"/hyper.sock"
-		SockTtyName:	"/run/vc/sbs/"+id+"/tty.sock"
-	}
+	agConfig := vc.KataAgentConfig{}
 
 	// VM resources
 	vmConfig := vc.Resources{
@@ -82,11 +79,12 @@ func CreateSandbox(ctx context.Context, id string) error {
 		HypervisorType:   vc.QemuHypervisor,
 		HypervisorConfig: hypervisorConfig,
 
-		AgentType:   vc.HyperstartAgent,
+		AgentType:   vc.KataContainersAgent,
 		AgentConfig: agConfig,
 
 		Containers: []vc.ContainerConfig{container},
 	}
+	log.G(ctx).Infoln("Sandbox: sandbox config: %v", sandboxConfig)
 
 	log.G(ctx).Infoln("Sandbox: create kata sandbox")
 

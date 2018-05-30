@@ -142,6 +142,7 @@ func NewInit(ctx context.Context, path, workDir, namespace string, pid int, conf
 	log.G(ctx).Infoln("Init: create sandbox")
 	err = server.CreateSandbox(ctx, config.ID)
 	if err != nil {
+		log.G(ctx).Infoln("Init: error create sandbox")
 		return nil, errors.Wrap(err, "failed to create sandbox")
 	}
 	log.G(ctx).Infoln("Init: finish creating sandbox")

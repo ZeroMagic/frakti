@@ -115,6 +115,7 @@ func (t *Task) Start(ctx context.Context) error {
 	}
 
 	if !hasCgroup {
+		log.G(ctx).Infoln("Task: load cgroups")
 		cg, err := cgroups.Load(cgroups.V1, cgroups.PidPath(int(t.pid)))
 		if err != nil {
 			return err
@@ -122,6 +123,9 @@ func (t *Task) Start(ctx context.Context) error {
 		t.mu.Lock()
 		t.cg = cg
 		t.mu.Unlock()
+		if err := t.monitor.Monitor(t); err != nil {
+			return err
+		}
 	}
 
 	log.G(ctx).Infoln("Task: start publishing")

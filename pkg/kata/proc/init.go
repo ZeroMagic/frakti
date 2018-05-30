@@ -232,27 +232,23 @@ func (p *Init) resize(ws console.WinSize) error {
 	return p.console.Resize(ws)
 }
 
-func (p *Init) start(context context.Context) error {
+func (p *Init) start(ctx context.Context) error {
 	log.G(ctx).Infoln("Init: start kata sandbox")
 	log.G(ctx).Infof("Init: init process id is %v, pid is %v  ", p.id, p.pid)
-	sandbox, err := vc.StartSandbox(p.id)
-	if err != nil {
-		return errors.Wrapf(err, "Could not start sandbox")
-	}
-	log.G(ctx).Infof("Init: VCSandbox is %v", sandbox)
+	server.StartSandbox(p.id)
 	return fmt.Errorf("init process start is not implemented")
 }
 
-func (p *Init) delete(context context.Context) error {
+func (p *Init) delete(ctx context.Context) error {
 	return fmt.Errorf("init process delete is not implemented")
 }
 
-func (p *Init) kill(context context.Context, signal uint32, all bool) error {
+func (p *Init) kill(ctx context.Context, signal uint32, all bool) error {
 	return fmt.Errorf("init process kill is not implemented")
 }
 
 // KillAll processes belonging to the init process
-func (p *Init) KillAll(context context.Context) error {
+func (p *Init) KillAll(ctx context.Context) error {
 	return fmt.Errorf("init process KillAll is not implemented")
 }
 

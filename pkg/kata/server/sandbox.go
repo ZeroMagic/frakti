@@ -90,18 +90,19 @@ func CreateSandbox(ctx context.Context, id string) error {
 	if err != nil {
 		return errors.Wrapf(err, "Could not create sandbox")
 	}
-	log.G(ctx).Infof("Sandbox: %v", vm)
+	log.G(ctx).Infof("Sandbox: create, VCSandboxis %v", vm)
 
 	return err
 }
 
 // StartSandbox starts a kata-runtime sandbox
-func StartSandbox(ctx context.Context, id string, opts runtime.CreateOpts) error {
+func StartSandbox(ctx context.Context, id string) error {
 	log.G(ctx).Infoln("Sandbox: start kata sandbox")
-	_, err := vc.StartSandbox(id)
+	sandbox, err := vc.StartSandbox(id)
 	if err != nil {
 		return errors.Wrapf(err, "Could not start sandbox")
 	}
+	log.G(ctx).Infof("Sandbox: start, VCSandbox is %v", sandbox)
 
 	return err
 }

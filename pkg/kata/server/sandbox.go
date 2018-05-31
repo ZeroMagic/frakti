@@ -46,7 +46,7 @@ func CreateSandbox(ctx context.Context, id string) error {
 	// Define the container command and bundle.
 	container := vc.ContainerConfig{
 		ID:     id,
-		RootFs: "/run/containerd/io.containerd.runtime.v1.kata-runtime/default/"+id+"/rootfs",
+		RootFs: "/var/run/containerd/io.containerd.runtime.v1.kata-runtime/default/"+id+"/rootfs",
 		Cmd:    cmd,
 	}
 
@@ -59,7 +59,7 @@ func CreateSandbox(ctx context.Context, id string) error {
 		HypervisorPath: "/usr/bin/qemu-lite-system-x86_64",
 	}
 
-	// Use hyperstart default values for the agent.
+	// Use KataAgent default values for the agent.
 	agConfig := vc.KataAgentConfig{}
 
 	// VM resources
@@ -70,7 +70,7 @@ func CreateSandbox(ctx context.Context, id string) error {
 	// The sandbox configuration:
 	// - One container
 	// - Hypervisor is QEMU
-	// - Agent is hyperstart
+	// - Agent is KataContainers
 	sandboxConfig := vc.SandboxConfig{
 		ID:	id,
 
@@ -82,19 +82,25 @@ func CreateSandbox(ctx context.Context, id string) error {
 		AgentType:   vc.KataContainersAgent,
 		AgentConfig: agConfig,
 
+		ProxyType:	vc.KataBuiltInProxyType,
+
+		ShimType:	vc.KataBuiltInShimType,
+
+		NetworkModel:	NoopNetworkModel
+
 		Containers: []vc.ContainerConfig{container},
 	}
-	log.G(ctx).Infoln("Sandbox: sandbox config: %v", sandboxConfig)
+	log.G(ctx).Infoln("Sandbox: sandbox config: ", sandboxConfig)
 
 	log.G(ctx).Infoln("Sandbox: create kata sandbox")
 
-	vm, err := vc.CreateSandbox(sandboxConfig)
+	sandbox, err := vc.CreateSandbox(sandboxConfig)
 	log.G(ctx).Infoln("Sandbox: config！！！")
 	if err != nil {
-		log.G(ctx).Infoln("Sandbox: config error！！！")
+		log.G(ctx).Errorln("Sandbox: config error！！！", err)
 		return errors.Wrapf(err, "Could not create sandbox")
 	}
-	log.G(ctx).Infof("Sandbox: create, VCSandbox is %v", vm)
+	log.G(ctx).Infof("Sandbox: create, VCSandbox is %v", sandbox)
 
 	return err
 }

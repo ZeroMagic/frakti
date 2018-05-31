@@ -86,7 +86,7 @@ func CreateSandbox(ctx context.Context, id string) error {
 
 		ShimType:	vc.KataBuiltInShimType,
 
-		NetworkModel:	NoopNetworkModel
+		NetworkModel:	vc.NoopNetworkModel,
 
 		Containers: []vc.ContainerConfig{container},
 	}

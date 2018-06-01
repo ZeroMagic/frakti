@@ -31,6 +31,10 @@ func (p *kataBuiltInProxy) start(sandbox *Sandbox, params proxyParams) (int, str
 
 	p.sandboxID = sandbox.id
 	console, err := sandbox.hypervisor.getSandboxConsole(sandbox.id)
+	/////////////
+	logrus.FieldLogger(logrus.New()).WithFields(logrus.Fields{
+		"console": console,
+	}).WithError(err).Info("!!! Debug kataBuiltInProxy.start")
 	if err != nil {
 		return -1, "", err
 	}
@@ -59,6 +63,8 @@ func (p *kataBuiltInProxy) watchConsole(proto, console string, logger *logrus.En
 		conn    net.Conn
 	)
 
+	
+
 	switch proto {
 	case consoleProtoUnix:
 		conn, err = net.Dial("unix", console)
@@ -76,6 +82,12 @@ func (p *kataBuiltInProxy) watchConsole(proto, console string, logger *logrus.En
 
 	go func() {
 		scanner = bufio.NewScanner(conn)
+		/////////////
+		logrus.FieldLogger(logrus.New()).WithFields(logrus.Fields{
+			"console": console,
+			"scanner":	scanner,
+			"conn":		conn,
+		}).WithError(err).Infof("!!! Debug kataBuiltInProxy.watchConsole\n[SB-%s] vmconsole: %s\n", p.sandboxID, scanner.Text())
 		for scanner.Scan() {
 			fmt.Printf("[SB-%s] vmconsole: %s\n", p.sandboxID, scanner.Text())
 		}

@@ -54,9 +54,23 @@ func CreateSandbox(ctx context.Context, id string) error {
 
 	// Sets the hypervisor configuration.
 	hypervisorConfig := vc.HypervisorConfig{
+		KernelParams:	[]vc.Param{
+			vc.Param{
+				Key:	"agent.log",
+				Value:	"debug",
+			},
+		},
+		HypervisorParams:	[]vc.Param{
+			vc.Param{
+				Key:	"qemu cmdline",
+				Value:	"-D <logfile>",
+			},
+		},
 		KernelPath:     "/usr/share/kata-containers/vmlinux.container",
 		ImagePath:      "/usr/share/kata-containers/kata-containers.img",
 		HypervisorPath: "/usr/bin/qemu-lite-system-x86_64",
+
+		Debug:	true,
 	}
 
 	// Use KataAgent default values for the agent.
@@ -87,8 +101,6 @@ func CreateSandbox(ctx context.Context, id string) error {
 		ProxyType:	vc.KataBuiltInProxyType,
 
 		ShimType:	vc.KataBuiltInShimType,
-
-		NetworkModel:	vc.NoopNetworkModel,
 
 		Containers: []vc.ContainerConfig{container},
 	}

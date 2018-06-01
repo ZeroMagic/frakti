@@ -60,7 +60,9 @@ func CreateSandbox(ctx context.Context, id string) error {
 	}
 
 	// Use KataAgent default values for the agent.
-	agConfig := vc.KataAgentConfig{}
+	agConfig := vc.KataAgentConfig{
+		LongLiveConn:	true,
+	}
 
 	// VM resources
 	vmConfig := vc.Resources{

@@ -88,22 +88,22 @@ ctr: $(BUILD_DIR)/ctr
 
 .PHONY: install-ctr
 install-ctr: ctr
-	install -D -m 755 $(BUILD_DIR)/ctr $(BINDIR)/ctr
+	install -D -m 755 $(BUILD_DIR)/ctr $(BINDIR)/test-ctr
 
 .PHONY: containerd
 containerd: $(BUILD_DIR)/containerd
 
 .PHONY: install-containerd
 install-containerd: containerd
-	install -D -m 755 $(BUILD_DIR)/containerd $(BINDIR)/containerd
+	install -D -m 755 $(BUILD_DIR)/containerd $(BINDIR)/test-containerd
 
 .PHONY: install
 install: install-ctr install-containerd
 
 .PHONY: uninstall
 uninstall:
-	rm -f $(BINDIR)/containerd
-	rm -f $(BINDIR)/ctr
+	rm -f $(BINDIR)/test-containerd
+	rm -f $(BINDIR)/test-ctr
 
 .PHONY: clean 
 clean:

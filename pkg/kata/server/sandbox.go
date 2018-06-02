@@ -84,12 +84,12 @@ func CreateSandbox(ctx context.Context, id string) error {
 				Value:	"debug",
 			},
 			vc.Param{
-				Key:	"qemu cmdline",
+				Key:	"qemu.cmdline",
 				Value:	"-D <logfile>",
 			},
 		},
-		KernelPath:     "/usr/share/kata-containers/kata-vmlinuz-4.14.22.container",
-		ImagePath:      "/usr/share/kata-containers/kata-containers-2018-06-02-10:47:04.939768334+0800-2569cfa",
+		KernelPath:     "/usr/share/kata-containers/vmlinuz.container",
+		ImagePath:      "/usr/share/kata-containers/kata-containers.img",
 		HypervisorPath: "/usr/bin/qemu-lite-system-x86_64",
 
 		BlockDeviceDriver:	"virtio-scsi",
@@ -105,6 +105,8 @@ func CreateSandbox(ctx context.Context, id string) error {
 
 		Mlock:	true,
 		Msize9p:	uint32(8192),
+
+		Debug:	true,
 	}
 
 	// Use KataAgent default values for the agent.

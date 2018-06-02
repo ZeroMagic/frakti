@@ -83,16 +83,17 @@ func (p *kataBuiltInProxy) watchConsole(proto, console string, logger *logrus.En
 	go func() {
 		scanner = bufio.NewScanner(conn)
 		
-		for scanner.Scan() {
-
-			fmt.Printf("[SB-%s] vmconsole: %s\n", p.sandboxID, scanner.Text())
-		}
 		/////////////
 		logrus.FieldLogger(logrus.New()).WithFields(logrus.Fields{
 			"console": console,
 			"scanner":	scanner,
 			"conn":		conn,
 		}).WithError(err).Infof("!!! Debug kataBuiltInProxy.watchConsole\n[SB-%s] vmconsole: %s\n", p.sandboxID, scanner.Text())
+		
+		for scanner.Scan() {
+
+			fmt.Printf("[SB-%s] vmconsole: %s\n", p.sandboxID, scanner.Text())
+		}
 
 		if err := scanner.Err(); err != nil {
 			if err == io.EOF {

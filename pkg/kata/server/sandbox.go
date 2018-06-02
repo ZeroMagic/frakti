@@ -46,7 +46,7 @@ func CreateSandbox(ctx context.Context, id string) error {
 	// Define the container command and bundle.
 	container := vc.ContainerConfig{
 		ID:     id,
-		RootFs: "/var/run/containerd/io.containerd.runtime.v1.kata-runtime/default/"+id+"/rootfs",
+		RootFs: "/run/containerd/io.containerd.runtime.v1.kata-runtime/default/"+id+"/rootfs",
 		Cmd:    cmd,
 	}
 
@@ -76,8 +76,8 @@ func CreateSandbox(ctx context.Context, id string) error {
 				Value:	"systemd-networkd.socket",
 			},
 		},
-		KernelPath:     "/usr/share/kata-containers/vmlinux.container",
-		ImagePath:      "/usr/share/kata-containers/kata-containers.img",
+		KernelPath:     "/usr/share/kata-containers/kata-vmlinuz-4.14.22.container",
+		ImagePath:      "/usr/share/kata-containers/kata-containers-2018-06-02-10:47:04.939768334+0800-2569cfa",
 		HypervisorPath: "/usr/bin/qemu-lite-system-x86_64",
 
 		BlockDeviceDriver:	"virtio-scsi",

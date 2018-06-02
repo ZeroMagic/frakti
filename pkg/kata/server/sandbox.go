@@ -33,12 +33,16 @@ func CreateSandbox(ctx context.Context, id string) error {
 	envs := []vc.EnvVar{
 		{
 			Var:   "PATH",
-			Value: "/bin:/usr/bin:/sbin:/usr/sbin",
+			Value: "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+		},
+		{
+			Var:   "PATH",
+			Value: "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
 		},
 	}
 
 	cmd := vc.Cmd{
-		Args:    strings.Split("/bin/sh", " "),
+		Args:    strings.Split("sh", " "),
 		Envs:    envs,
 		WorkDir: "/",
 	}
@@ -74,6 +78,14 @@ func CreateSandbox(ctx context.Context, id string) error {
 			vc.Param{
 				Key:	"systemd.mask",
 				Value:	"systemd-networkd.socket",
+			},
+			vc.Param{
+				Key:	"agent.log",
+				Value:	"debug",
+			},
+			vc.Param{
+				Key:	"qemu cmdline",
+				Value:	"-D <logfile>",
 			},
 		},
 		KernelPath:     "/usr/share/kata-containers/kata-vmlinuz-4.14.22.container",

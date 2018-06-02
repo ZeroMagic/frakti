@@ -56,21 +56,43 @@ func CreateSandbox(ctx context.Context, id string) error {
 	hypervisorConfig := vc.HypervisorConfig{
 		KernelParams:	[]vc.Param{
 			vc.Param{
-				Key:	"agent.log",
-				Value:	"debug",
+				Key:	"ip",
+				Value:	"::::::"+id+"::off::",
 			},
-		},
-		HypervisorParams:	[]vc.Param{
 			vc.Param{
-				Key:	"qemu cmdline",
-				Value:	"-D <logfile>",
+				Key:	"init",
+				Value:	"/usr/lib/systemd/systemd",
+			},
+			vc.Param{
+				Key:	"systemd.unit",
+				Value:	"kata-containers.target",
+			},
+			vc.Param{
+				Key:	"systemd.mask",
+				Value:	"systemd-networkd.service",
+			},
+			vc.Param{
+				Key:	"systemd.mask",
+				Value:	"systemd-networkd.socket",
 			},
 		},
 		KernelPath:     "/usr/share/kata-containers/vmlinux.container",
 		ImagePath:      "/usr/share/kata-containers/kata-containers.img",
 		HypervisorPath: "/usr/bin/qemu-lite-system-x86_64",
 
-		Debug:	true,
+		BlockDeviceDriver:	"virtio-scsi",
+
+		HypervisorMachineType:	"pc",
+
+		DefaultVCPUs:	uint32(1),
+		DefaultMaxVCPUs:	uint32(4),
+
+		DefaultMemSz:	uint32(2048),
+
+		DefaultBridges:	uint32(1),
+
+		Mlock:	true,
+		Msize9p:	uint32(8192),
 	}
 
 	// Use KataAgent default values for the agent.
@@ -80,7 +102,7 @@ func CreateSandbox(ctx context.Context, id string) error {
 
 	// VM resources
 	vmConfig := vc.Resources{
-		Memory: 1024,
+		Memory: 2048,
 	}
 
 	// The sandbox configuration:

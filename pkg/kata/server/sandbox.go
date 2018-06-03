@@ -52,6 +52,14 @@ func CreateSandbox(ctx context.Context, id string) error {
 		ID:     id,
 		RootFs: "/run/containerd/io.containerd.runtime.v1.kata-runtime/default/"+id+"/rootfs",
 		Cmd:    cmd,
+		Mounts: []vc.Mount{
+			{
+				Destination: "/sys/fs/cgroup",
+				Type:        "cgroup",
+				Source:      "cgroup",
+				Options:     []string{"nosuid", "noexec", "nodev", "relatime", "ro"},
+			},
+		},
 	}
 
 	log.G(ctx).Infof("container config:  %v \n", container)
@@ -63,22 +71,22 @@ func CreateSandbox(ctx context.Context, id string) error {
 				Key:	"ip",
 				Value:	"::::::"+id+"::off::",
 			},
-			vc.Param{
-				Key:	"init",
-				Value:	"/usr/lib/systemd/systemd",
-			},
-			vc.Param{
-				Key:	"systemd.unit",
-				Value:	"kata-containers.target",
-			},
-			vc.Param{
-				Key:	"systemd.mask",
-				Value:	"systemd-networkd.service",
-			},
-			vc.Param{
-				Key:	"systemd.mask",
-				Value:	"systemd-networkd.socket",
-			},
+			// vc.Param{
+			// 	Key:	"init",
+			// 	Value:	"/usr/lib/systemd/systemd",
+			// },
+			// vc.Param{
+			// 	Key:	"systemd.unit",
+			// 	Value:	"kata-containers.target",
+			// },
+			// vc.Param{
+			// 	Key:	"systemd.mask",
+			// 	Value:	"systemd-networkd.service",
+			// },
+			// vc.Param{
+			// 	Key:	"systemd.mask",
+			// 	Value:	"systemd-networkd.socket",
+			// },
 			vc.Param{
 				Key:	"agent.log",
 				Value:	"debug",
@@ -89,7 +97,7 @@ func CreateSandbox(ctx context.Context, id string) error {
 			},
 		},
 		KernelPath:     "/usr/share/kata-containers/vmlinuz.container",
-		ImagePath:      "/usr/share/kata-containers/kata-containers.img",
+		InitrdPath:     "/usr/share/kata-containers/kata-containers-initrd.img",
 		HypervisorPath: "/usr/bin/qemu-lite-system-x86_64",
 
 		BlockDeviceDriver:	"virtio-scsi",

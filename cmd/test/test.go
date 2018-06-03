@@ -14,22 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package server
+package main
 
 import (
-	"context"
-	"fmt"
 	"strings"
-
-	"github.com/containerd/containerd/runtime"
-	log "github.com/containerd/containerd/log"
-	errors "github.com/pkg/errors"
 
 	vc "github.com/kata-containers/runtime/virtcontainers"
 )
 
-// CreateSandbox creates a kata-runtime sandbox
-func CreateSandbox(ctx context.Context, id string) error {
+func main() {
+
+	id := "testKata"
+	
 	envs := []vc.EnvVar{
 		{
 			Var:   "PATH",
@@ -50,7 +46,7 @@ func CreateSandbox(ctx context.Context, id string) error {
 	// Define the container command and bundle.
 	container := vc.ContainerConfig{
 		ID:     id,
-		RootFs: "/run/containerd/io.containerd.runtime.v1.kata-runtime/default/"+id+"/rootfs",
+		RootFs: "/root/testKata/rootfs",
 		Cmd:    cmd,
 		Mounts: []vc.Mount{
 			{
@@ -98,7 +94,6 @@ func CreateSandbox(ctx context.Context, id string) error {
 		},
 	}
 
-	log.G(ctx).Infof("container config:  %v \n", container)
 
 	// Sets the hypervisor configuration.
 	hypervisorConfig := vc.HypervisorConfig{
@@ -184,39 +179,10 @@ func CreateSandbox(ctx context.Context, id string) error {
 
 		Containers: []vc.ContainerConfig{container},
 	}
-	log.G(ctx).Infoln("Sandbox: sandbox config: ", sandboxConfig)
 
-	log.G(ctx).Infoln("Sandbox: create kata sandbox")
-
-	sandbox, err := vc.CreateSandbox(sandboxConfig)
-	log.G(ctx).Infoln("Sandbox: config！！！")
+	_, err := vc.CreateSandbox(sandboxConfig)
 	if err != nil {
-		log.G(ctx).Errorln("Sandbox: config error！！！", err)
-		return errors.Wrapf(err, "Could not create sandbox")
+		return
 	}
-	log.G(ctx).Infof("Sandbox: create, VCSandbox is %v", sandbox)
 
-	return err
-}
-
-// StartSandbox starts a kata-runtime sandbox
-func StartSandbox(ctx context.Context, id string) error {
-	log.G(ctx).Infoln("Sandbox: start kata sandbox")
-	sandbox, err := vc.StartSandbox(id)
-	if err != nil {
-		return errors.Wrapf(err, "Could not start sandbox")
-	}
-	log.G(ctx).Infof("Sandbox: start, VCSandbox is %v", sandbox)
-
-	return err
-}
-
-// StopSandbox stops a kata-runtime sandbox
-func StopSandbox(ctx context.Context, id string, opts runtime.CreateOpts) error {
-	return fmt.Errorf("stop not implemented")
-}
-
-// DeleteSandbox deletes a kata-runtime sandbox
-func DeleteSandbox(ctx context.Context, id string, opts runtime.CreateOpts) error {
-	return fmt.Errorf("delete not implemented")
 }

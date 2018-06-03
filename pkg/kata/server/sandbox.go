@@ -90,6 +90,12 @@ func CreateSandbox(ctx context.Context, id string) error {
 				Options:     []string{"nosuid", "noexec", "nodev", "ro"},
 			},
 			{
+				Destination: "/run",
+				Type:        "tmpfs",
+				Source:      "tmpfs",
+				Options:     []string{"nosuid", "strictatime", "mode=755", "size=65536k"},
+			},
+			{
 				Destination: "/sys/fs/cgroup",
 				Type:        "cgroup",
 				Source:      "cgroup",

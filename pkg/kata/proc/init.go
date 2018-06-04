@@ -248,12 +248,10 @@ func (p *Init) delete(ctx context.Context) error {
 }
 
 func (p *Init) kill(ctx context.Context, signal uint32, all bool) error {
-	return fmt.Errorf("init process kill is not implemented")
-}
 
-// KillAll processes belonging to the init process
-func (p *Init) KillAll(ctx context.Context) error {
-	return fmt.Errorf("init process KillAll is not implemented")
+	server.KillContainer(p.id, p.id, syscall.Signal(signal), all)
+
+	return fmt.Errorf("init process kill is not implemented")
 }
 
 func (p *Init) setExited(status int) {

@@ -19,8 +19,12 @@ package server
 import (
 	"context"
 	"fmt"
+	"syscall"
 
 	"github.com/containerd/containerd/runtime"
+
+	vc "github.com/kata-containers/runtime/virtcontainers"
+	errors "github.com/pkg/errors"
 )
 
 // CreateContainer creates a kata-runtime container
@@ -41,4 +45,14 @@ func StopContainer(ctx context.Context, id string, opts runtime.CreateOpts) erro
 // DeleteContainer deletes a kata-runtime container
 func DeleteContainer(ctx context.Context, id string, opts runtime.CreateOpts) error {
 	return fmt.Errorf("delete container not implemented")
+}
+
+// KillContainer kills one or more kata-runtime containers
+func KillContainer(sandboxID, containerID string, signal syscall.Signal, all bool) error {
+	
+	err := vc.KillContainer(sandboxID, containerID, signal, all)
+	if err != nil {
+		return errors.Wrapf(err, "Could not kill container")
+	}
+	return nil
 }

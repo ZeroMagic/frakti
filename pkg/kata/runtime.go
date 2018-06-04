@@ -37,9 +37,6 @@ import (
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 	runtimespec "github.com/opencontainers/runtime-spec/specs-go"
 	errors "github.com/pkg/errors"
-
-	
-	
 )
 
 const (
@@ -125,9 +122,8 @@ func (r *Runtime) Create(ctx context.Context, id string, opts runtime.CreateOpts
 	}
 	log.G(ctx).Infof("Runtime: namespace is %v", namespace)
 
-	// Does kata-runtime have some config objects ?
-
-	// 2. create bundle to store local image
+	// 2. create bundle to store local image.
+	// Generate the rootfs dir and config.json
 	bundle, err := newBundle(id,
 		filepath.Join(r.state, namespace),
 		filepath.Join(r.root, namespace),
@@ -142,20 +138,12 @@ func (r *Runtime) Create(ctx context.Context, id string, opts runtime.CreateOpts
 	}()
 	log.G(ctx).Infof("Runtime: bundle is %v", bundle)
 
-	// 3. get pid for application
+	// 3. get pid for vm. Now we use the specify pid.
 	var pid uint32
 	pid = 10244
-	// if pid, err = r.pidPool.Get(); err != nil {
-	// 	return nil, err
-	// }
-	// defer func() {
-	// 	if err != nil {
-	// 		r.pidPool.Put(pid)
-	// 	}
-	// }()
 	log.G(ctx).Infof("Runtime: pid is %v", pid)
 
-	// 4. mount
+	// 4. mount rootfs
 	var eventRootfs []*types.Mount
 	for _, m := range opts.Rootfs {
 		eventRootfs = append(eventRootfs, &types.Mount{
@@ -166,7 +154,7 @@ func (r *Runtime) Create(ctx context.Context, id string, opts runtime.CreateOpts
 	}
 	log.G(ctx).Infof("Runtime: eventRootfs is %v", eventRootfs)
 
-	// 5. With annotation, we can tell sandbox from container
+	// 5. With containerType, we can tell sandbox from container. In the future, we will use the variable.
 	s, err := typeurl.UnmarshalAny(opts.Spec)
 	if err != nil {
 		return nil, err
@@ -175,7 +163,7 @@ func (r *Runtime) Create(ctx context.Context, id string, opts runtime.CreateOpts
 	containerType := spec.Annotations[annotations.ContainerType]
 	log.G(ctx).Infof("Runtime: ContainerType is %s\n", containerType)
 
-	// new task
+	// 6. new task. Init the vm, sandbox, and container.
 	log.G(ctx).Infoln("Runtime: enter newTask")
 	t, err := newTask(ctx, id, namespace, pid, r.monitor, r.events, opts, bundle)
 	if err != nil {
@@ -188,7 +176,7 @@ func (r *Runtime) Create(ctx context.Context, id string, opts runtime.CreateOpts
 	if err := r.tasks.Add(ctx, t); err != nil {
 		return nil, err
 	}
-	// after the task is created, add it to the monitor if it has a cgroup
+	// 7. after the task is created, add it to the monitor if it has a cgroup
 	// this can be different on a checkpoint/restore
 	log.G(ctx).Infoln("Runtime: start monitoring")
 	if t.cg != nil {
@@ -199,6 +187,8 @@ func (r *Runtime) Create(ctx context.Context, id string, opts runtime.CreateOpts
 			return nil, err
 		}
 	}
+
+	// 8. publish create event
 	log.G(ctx).Infoln("Runtime: start publishing")
 	r.events.Publish(ctx, runtime.TaskCreateEventTopic, &eventstypes.TaskCreate{
 		ContainerID: id,

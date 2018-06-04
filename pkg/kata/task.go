@@ -47,9 +47,6 @@ type Task struct {
 	events    *exchange.Exchange
 	
 	processList map[string]proc.Process
-
-	// this field may be unnecessary
-	pidPool   *pidPool
 }
 
 func newTask(ctx context.Context, id, namespace string, pid uint32, monitor runtime.TaskMonitor, events *exchange.Exchange, opts runtime.CreateOpts, bundle *bundle) (*Task, error) {
@@ -81,7 +78,6 @@ func newTask(ctx context.Context, id, namespace string, pid uint32, monitor runt
 		monitor:   monitor,
 		events:    events,
 		processList: processList,
-		// pidPool:   r.pidPool,
 	}, nil
 }
 
@@ -213,7 +209,12 @@ func (t *Task) CloseIO(ctx context.Context) error {
 
 // Kill the task using the provided signal
 func (t *Task) Kill(ctx context.Context, signal uint32, all bool) error {
-	return fmt.Errorf("task kill implemented")
+	p := t.processList[t.id]
+	err := p.Kill(ctx, signal, all)
+	if err != nil {
+		return errors.Wrap(err, "task kill error")
+	}
+	return nil
 }
 
 // ResizePty changes the side of the task's PTY to the provided width and height

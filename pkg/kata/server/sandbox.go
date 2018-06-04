@@ -113,6 +113,7 @@ func CreateSandbox(ctx context.Context, id string) error {
 				Key:	"ip",
 				Value:	"::::::"+id+"::off::",
 			},
+			// these params are used for rootfs image
 			// vc.Param{
 			// 	Key:	"init",
 			// 	Value:	"/usr/lib/systemd/systemd",

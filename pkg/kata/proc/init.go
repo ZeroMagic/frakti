@@ -220,8 +220,14 @@ func (p *Init) Stdio() Stdio {
 func (p *Init) Status(ctx context.Context) (string, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	// return the state of kata containers
-	return "test", nil
+	status, err := server.StatusContainer(p.id, p.id)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return "stopped", nil
+		}
+		return "", errors.Wrap(err, "OCI runtime state failed")
+	}
+	return string(status.State.State), nil
 }
 
 // Wait for the process to exit

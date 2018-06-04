@@ -56,3 +56,13 @@ func KillContainer(sandboxID, containerID string, signal syscall.Signal, all boo
 	}
 	return nil
 }
+
+// StatusContainer returns the virtcontainers container status.
+func StatusContainer(sandboxID, containerID string) (vc.ContainerStatus, error) {
+	
+	status, err := vc.StatusContainer(sandboxID, containerID)
+	if err != nil {
+		return vc.ContainerStatus{}, errors.Wrapf(err, "Could not kill container")
+	}
+	return status, nil
+}

@@ -32,6 +32,8 @@ import (
 	
 	"k8s.io/frakti/pkg/kata/proc"
 
+	vc "github.com/kata-containers/runtime/virtcontainers"
+
 )
 
 // Task on a hypervisor based system
@@ -129,31 +131,38 @@ func (t *Task) Start(ctx context.Context) error {
 
 // State returns runtime information for the task
 func (t *Task) State(ctx context.Context) (runtime.State, error) {
-    var (
-		status     runtime.Status
-		// exitStatus uint32
-		// exitedAt   time.Time
-	)
 
-	// if p := t.getProcess(t.id); p != nil {
-	// 	status = p.Status()
-	// 	exitStatus = p.exitCode
-	// 	exitedAt = p.exitTime
-	// } else {
-	// 	status = t.getStatus()
-	// }
+	p := t.processList[t.id]
+	
 
-	status = t.getStatus()
+	state, err := p.Status(ctx)
+	if err != nil {
+		return runtime.State{}, errors.Wrap(err, "task state error")
+	}
+
+	var status runtime.Status
+	switch state {
+	case string(vc.StateReady):
+		status = runtime.CreatedStatus
+	case string(vc.StateRunning):
+		status = runtime.RunningStatus
+	case string(vc.StatePaused):
+		status = runtime.PausedStatus
+	case string(vc.StateStopped):
+		status = runtime.StoppedStatus
+	}
+
+	stdio := p.Stdio()
 
 	return runtime.State{
 		Status:     status,
 		Pid:        t.pid,
-		Stdin:      "",
-		Stdout:     "",
-		Stderr:     "",
-		Terminal:   true,
-		ExitStatus: 1,
-		ExitedAt:   time.Time{},
+		Stdin:      stdio.Stdin,
+		Stdout:     stdio.Stdout,
+		Stderr:     stdio.Stderr,
+		Terminal:   stdio.Terminal,
+		ExitStatus: uint32(p.ExitStatus()),
+		ExitedAt:   p.ExitedAt(),
 	}, nil
 }
 
@@ -224,18 +233,11 @@ func (t *Task) ResizePty(ctx context.Context, size runtime.ConsoleSize) error {
 
 // Wait for the task to exit returning the status and timestamp
 func (t *Task) Wait(ctx context.Context) (*runtime.Exit, error) {
-	t.processList[fmt.Sprintf("%d", t.pid)].Wait()
+	p := t.processList[fmt.Sprintf("%d", t.pid)]
+	p.Wait()
     return &runtime.Exit{
 		Pid:		t.pid,
-		Status: 	uint32(t.getStatus()),
+		Status: 	uint32(p.ExitStatus()),
 		Timestamp:	time.Time{},
 	}, nil
-}
-
-func (t *Task) getStatus() runtime.Status {
-	t.mu.Lock()
-	status := runtime.CreatedStatus
-	t.mu.Unlock()
-
-	return status
 }

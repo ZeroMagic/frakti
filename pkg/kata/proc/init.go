@@ -75,7 +75,6 @@ func NewInit(ctx context.Context, path, workDir, namespace string, pid int, conf
 		err 	error
 	)
 
-	// rootfs
 	rootfs := filepath.Join(path, "rootfs")
 	defer func() {
 		if success {
@@ -86,7 +85,6 @@ func NewInit(ctx context.Context, path, workDir, namespace string, pid int, conf
 		}
 	}()
 
-	// mount
 	for _, rm := range config.Rootfs {
 		m := &mount.Mount{
 			Type:    rm.Type,
@@ -98,10 +96,7 @@ func NewInit(ctx context.Context, path, workDir, namespace string, pid int, conf
 		}
 	}
 
-	// platform
 	platform, err := platform.NewPlatform()
-
-	// Do I need to create sandbox here ?
 
 	p := &Init{
 		id:       config.ID,

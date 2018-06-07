@@ -42,9 +42,11 @@ func CreateSandbox(ctx context.Context, id string) error {
 	}
 
 	cmd := vc.Cmd{
-		Args:    strings.Split("sh", " "),
-		Envs:    envs,
-		WorkDir: "/",
+		Args:    		strings.Split("sh", " "),
+		Envs:    		envs,
+		User:			"0",
+		PrimaryGroup:	"0",
+		WorkDir: 		"/",
 		Capabilities:	vc.LinuxCapabilities{
 			Bounding:	[]string{
 				"CAP_CHOWN",
@@ -116,10 +118,10 @@ func CreateSandbox(ctx context.Context, id string) error {
 
 	// Define the container command and bundle.
 	container := vc.ContainerConfig{
-		ID:     id,
-		RootFs: "/run/containerd/io.containerd.runtime.v1.kata-runtime/default/"+id+"/rootfs",
-		Cmd:    cmd,
-		Mounts: []vc.Mount{
+		ID:     	id,
+		RootFs: 	"/run/containerd/io.containerd.runtime.v1.kata-runtime/default/"+id+"/rootfs",
+		Cmd:    	cmd,
+		Mounts: 	[]vc.Mount{
 			{
 				Destination: "/proc",
 				Type:        "proc",
@@ -161,12 +163,6 @@ func CreateSandbox(ctx context.Context, id string) error {
 				Type:        "tmpfs",
 				Source:      "tmpfs",
 				Options:     []string{"nosuid", "strictatime", "mode=755", "size=65536k"},
-			},
-			{
-				Destination: "/sys/fs/cgroup",
-				Type:        "cgroup",
-				Source:      "cgroup",
-				Options:     []string{"nosuid", "noexec", "nodev", "relatime", "ro"},
 			},
 		},
 	}
@@ -255,6 +251,12 @@ func CreateSandbox(ctx context.Context, id string) error {
 		ProxyType:	vc.KataBuiltInProxyType,
 
 		ShimType:	vc.KataBuiltInShimType,
+
+		NetworkModel:	vc.CNMNetworkModel,
+		NetworkConfig:	vc.NetworkConfig{
+			NumInterfaces:		1,
+			InterworkingModel:	2,
+		},
 
 		Containers: []vc.ContainerConfig{container},
 	}

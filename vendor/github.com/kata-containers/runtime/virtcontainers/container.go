@@ -15,6 +15,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/kata-containers/runtime/virtcontainers/pkg/annotations"
 	specs "github.com/opencontainers/runtime-spec/specs-go"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sys/unix"
@@ -657,6 +658,12 @@ func createContainer(sandbox *Sandbox, contConfig ContainerConfig) (c *Container
 	}
 	c.process = *process
 
+	// If this is a sandbox container, store the pid for sandbox
+	ann := c.GetAnnotations()
+	if ann[annotations.ContainerTypeKey] == string(PodSandbox) {
+		sandbox.setSandboxPid(c.process.Pid)
+	}
+
 	// Store the container process returned by the agent.
 	if err = c.storeProcess(); err != nil {
 		return
@@ -861,8 +868,8 @@ func (c *Container) signalProcess(processID string, signal syscall.Signal, all b
 		return fmt.Errorf("Sandbox not ready or running, impossible to signal the container")
 	}
 
-	if c.state.State != StateReady && c.state.State != StateRunning {
-		return fmt.Errorf("Container not ready or running, impossible to signal the container")
+	if c.state.State != StateReady && c.state.State != StateRunning && c.state.State != StatePaused {
+		return fmt.Errorf("Container not ready, running or paused, impossible to signal the container")
 	}
 
 	return c.sandbox.agent.signalProcess(c, processID, signal, all)
@@ -929,6 +936,38 @@ func (c *Container) update(resources specs.LinuxResources) error {
 	}
 
 	return c.sandbox.agent.updateContainer(c.sandbox, *c, resources)
+}
+
+func (c *Container) pause() error {
+	if err := c.checkSandboxRunning("pause"); err != nil {
+		return err
+	}
+
+	if c.state.State != StateRunning && c.state.State != StateReady {
+		return fmt.Errorf("Container not running or ready, impossible to pause")
+	}
+
+	if err := c.sandbox.agent.pauseContainer(c.sandbox, *c); err != nil {
+		return err
+	}
+
+	return c.setContainerState(StatePaused)
+}
+
+func (c *Container) resume() error {
+	if err := c.checkSandboxRunning("resume"); err != nil {
+		return err
+	}
+
+	if c.state.State != StatePaused {
+		return fmt.Errorf("Container not paused, impossible to resume")
+	}
+
+	if err := c.sandbox.agent.resumeContainer(c.sandbox, *c); err != nil {
+		return err
+	}
+
+	return c.setContainerState(StateRunning)
 }
 
 func (c *Container) hotplugDrive() error {

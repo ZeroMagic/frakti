@@ -70,6 +70,10 @@ type State struct {
 
 	// PCI slot at which the block device backing the container rootfs is attached.
 	RootfsPCIAddr string `json:"rootfsPCIAddr"`
+
+	// Pid is the process id of the sandbox container which is the first
+	// container to be started.
+	Pid int `json:"pid"`
 }
 
 // valid checks that the sandbox state is valid.
@@ -352,6 +356,8 @@ type SandboxConfig struct {
 	// Annotations keys must be unique strings and must be name-spaced
 	// with e.g. reverse domain notation (org.clearlinux.key).
 	Annotations map[string]string
+
+	ShmSize uint64
 }
 
 // valid checks that the sandbox configuration is valid.
@@ -455,6 +461,8 @@ type Sandbox struct {
 	annotationsLock *sync.RWMutex
 
 	wg *sync.WaitGroup
+
+	shmSize uint64
 }
 
 // ID returns the sandbox identifier string.
@@ -734,6 +742,7 @@ func newSandbox(sandboxConfig SandboxConfig) (*Sandbox, error) {
 		state:           State{},
 		annotationsLock: &sync.RWMutex{},
 		wg:              &sync.WaitGroup{},
+		shmSize:         sandboxConfig.ShmSize,
 	}
 
 	if err = globalSandboxList.addSandbox(s); err != nil {
@@ -1272,6 +1281,15 @@ func (s *Sandbox) decrementSandboxBlockIndex() error {
 	}
 
 	return nil
+}
+
+// setSandboxPid sets the Pid of the the shim process belonging to the
+// sandbox container as the Pid of the sandbox.
+func (s *Sandbox) setSandboxPid(pid int) error {
+	s.state.Pid = pid
+
+	// update on-disk state
+	return s.storage.storeSandboxResource(s.id, stateFileType, s.state)
 }
 
 func (s *Sandbox) setContainersState(state stateString) error {

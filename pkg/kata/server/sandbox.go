@@ -222,6 +222,8 @@ func CreateSandbox(ctx context.Context, id string) error {
 
 		DefaultBridges:	uint32(1),
 
+		EnableIOThreads:	true,
+
 		Mlock:	true,
 		Msize9p:	uint32(8192),
 

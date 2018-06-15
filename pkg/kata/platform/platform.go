@@ -34,7 +34,6 @@ var (
 	}
 )
 
-
 // Platform handles platform-specific behavior that may differs across
 // platform implementations
 type Platform interface {

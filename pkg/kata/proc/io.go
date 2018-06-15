@@ -17,11 +17,11 @@ limitations under the License.
 package proc
 
 import (
+	"context"
+	"fmt"
 	"io"
 	"os"
 	"os/exec"
-	"context"
-	"fmt"
 	"sync"
 	"syscall"
 
@@ -295,10 +295,10 @@ func copyPipes(ctx context.Context, rio IO, stdin, stdout, stderr string, wg, cw
 		)
 		if ok {
 			if fw, err = fifo.OpenFifo(ctx, i.name, syscall.O_WRONLY, 0); err != nil {
-				return fmt.Errorf("containerd-shim: opening %s failed: %s", i.name, err)
+				return fmt.Errorf("opening %s failed: %s", i.name, err)
 			}
 			if fr, err = fifo.OpenFifo(ctx, i.name, syscall.O_RDONLY, 0); err != nil {
-				return fmt.Errorf("containerd-shim: opening %s failed: %s", i.name, err)
+				return fmt.Errorf("opening %s failed: %s", i.name, err)
 			}
 		} else {
 			if sameFile != nil {
@@ -306,7 +306,7 @@ func copyPipes(ctx context.Context, rio IO, stdin, stdout, stderr string, wg, cw
 				continue
 			}
 			if fw, err = os.OpenFile(i.name, syscall.O_WRONLY|syscall.O_APPEND, 0); err != nil {
-				return fmt.Errorf("containerd-shim: opening %s failed: %s", i.name, err)
+				return fmt.Errorf("opening %s failed: %s", i.name, err)
 			}
 			if stdout == stderr {
 				sameFile = fw

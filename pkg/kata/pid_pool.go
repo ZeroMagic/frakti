@@ -41,20 +41,20 @@ func (p *pidPool) Get() (uint32, error) {
 	defer p.Unlock()
 
 	pid := p.cur + 1
-	// 32767 is the max pid of most 32bit Linux System. Maybe we can use other way to acquire the value. 
+	// 32767 is the max pid of most 32bit Linux System. Maybe we can use other way to acquire the value.
 	for pid != 32767 {
 		process, err := os.FindProcess(int(pid))
 		// flag indicates whether we can use this pid.
 		flag := false
-        if err != nil {
+		if err != nil {
 			// If the corresponding process is not found, it means that we can use this pid.
-            flag = true
-        } else {
+			flag = true
+		} else {
 			err := process.Signal(syscall.Signal(0))
 			if err.Error() == "no such process" || err.Error() == "os: process already finished" {
 				flag = true
 			}
-        }
+		}
 
 		if flag {
 			p.pool[pid] = struct{}{}

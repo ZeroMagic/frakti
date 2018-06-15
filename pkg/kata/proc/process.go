@@ -39,7 +39,7 @@ func (s Stdio) IsNull() bool {
 }
 
 // Process on a linux system
-type Process interface {	
+type Process interface {
 	State
 
 	// ID returns the id for the process
@@ -89,5 +89,3 @@ func stateName(v interface{}) string {
 	}
 	panic(errors.Errorf("invalid state %v", v))
 }
-
-

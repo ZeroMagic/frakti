@@ -22,14 +22,12 @@ import (
 	"strings"
 
 	"github.com/containerd/containerd/runtime"
-	log "github.com/containerd/containerd/log"
-	errors "github.com/pkg/errors"
-
 	vc "github.com/kata-containers/runtime/virtcontainers"
+	errors "github.com/pkg/errors"
 )
 
 // CreateSandbox creates a kata-runtime sandbox
-func CreateSandbox(ctx context.Context, id string) error {
+func CreateSandbox(ctx context.Context, id string) (vc.VCSandbox, error) {
 	envs := []vc.EnvVar{
 		{
 			Var:   "PATH",
@@ -42,91 +40,40 @@ func CreateSandbox(ctx context.Context, id string) error {
 	}
 
 	cmd := vc.Cmd{
-		Args:    		strings.Split("sh", " "),
-		Envs:    		envs,
-		User:			"0",
-		PrimaryGroup:	"0",
-		WorkDir: 		"/",
-		Capabilities:	vc.LinuxCapabilities{
-			Bounding:	[]string{
-				"CAP_CHOWN",
-                "CAP_DAC_OVERRIDE",
-                "CAP_FSETID",
-                "CAP_FOWNER",
-                "CAP_MKNOD",
-                "CAP_NET_RAW",
-                "CAP_SETGID",
-                "CAP_SETUID",
-                "CAP_SETFCAP",
-                "CAP_SETPCAP",
-                "CAP_NET_BIND_SERVICE",
-                "CAP_SYS_CHROOT",
-                "CAP_KILL",
-                "CAP_AUDIT_WRITE",
+		Args:    strings.Split("sh", " "),
+		Envs:    envs,
+		WorkDir: "/",
+		Capabilities: vc.LinuxCapabilities{
+			Bounding: []string{
+				"CAP_CHOWN", "CAP_DAC_OVERRIDE", "CAP_FSETID", "CAP_FOWNER", "CAP_MKNOD",
+				"CAP_NET_RAW", "CAP_SETGID", "CAP_SETUID", "CAP_SETFCAP", "CAP_SETPCAP",
+				"CAP_NET_BIND_SERVICE", "CAP_SYS_CHROOT", "CAP_KILL", "CAP_AUDIT_WRITE",
 			},
-			Effective:	[]string{
-				"CAP_CHOWN",
-                "CAP_DAC_OVERRIDE",
-                "CAP_FSETID",
-                "CAP_FOWNER",
-                "CAP_MKNOD",
-                "CAP_NET_RAW",
-                "CAP_SETGID",
-                "CAP_SETUID",
-                "CAP_SETFCAP",
-                "CAP_SETPCAP",
-                "CAP_NET_BIND_SERVICE",
-                "CAP_SYS_CHROOT",
-                "CAP_KILL",
-                "CAP_AUDIT_WRITE",
+			Effective: []string{
+				"CAP_CHOWN", "CAP_DAC_OVERRIDE", "CAP_FSETID", "CAP_FOWNER", "CAP_MKNOD",
+				"CAP_NET_RAW", "CAP_SETGID", "CAP_SETUID", "CAP_SETFCAP", "CAP_SETPCAP",
+				"CAP_NET_BIND_SERVICE", "CAP_SYS_CHROOT", "CAP_KILL", "CAP_AUDIT_WRITE",
 			},
-			Inheritable:	[]string{
-				"CAP_CHOWN",
-                "CAP_DAC_OVERRIDE",
-                "CAP_FSETID",
-                "CAP_FOWNER",
-                "CAP_MKNOD",
-                "CAP_NET_RAW",
-                "CAP_SETGID",
-                "CAP_SETUID",
-                "CAP_SETFCAP",
-                "CAP_SETPCAP",
-                "CAP_NET_BIND_SERVICE",
-                "CAP_SYS_CHROOT",
-                "CAP_KILL",
-                "CAP_AUDIT_WRITE",
+			Inheritable: []string{
+				"CAP_CHOWN", "CAP_DAC_OVERRIDE", "CAP_FSETID", "CAP_FOWNER", "CAP_MKNOD",
+				"CAP_NET_RAW", "CAP_SETGID", "CAP_SETUID", "CAP_SETFCAP", "CAP_SETPCAP",
+				"CAP_NET_BIND_SERVICE", "CAP_SYS_CHROOT", "CAP_KILL", "CAP_AUDIT_WRITE",
 			},
-			Permitted:	[]string{
-				"CAP_CHOWN",
-                "CAP_DAC_OVERRIDE",
-                "CAP_FSETID",
-                "CAP_FOWNER",
-                "CAP_MKNOD",
-                "CAP_NET_RAW",
-                "CAP_SETGID",
-                "CAP_SETUID",
-                "CAP_SETFCAP",
-                "CAP_SETPCAP",
-                "CAP_NET_BIND_SERVICE",
-                "CAP_SYS_CHROOT",
-                "CAP_KILL",
-                "CAP_AUDIT_WRITE",
+			Permitted: []string{
+				"CAP_CHOWN", "CAP_DAC_OVERRIDE", "CAP_FSETID", "CAP_FOWNER", "CAP_MKNOD",
+				"CAP_NET_RAW", "CAP_SETGID", "CAP_SETUID", "CAP_SETFCAP", "CAP_SETPCAP",
+				"CAP_NET_BIND_SERVICE", "CAP_SYS_CHROOT", "CAP_KILL", "CAP_AUDIT_WRITE",
 			},
 		},
-		NoNewPrivileges:	true,
+		NoNewPrivileges: true,
 	}
 
 	// Define the container command and bundle.
 	container := vc.ContainerConfig{
-		ID:     	id,
-		RootFs: 	"/run/containerd/io.containerd.runtime.v1.kata-runtime/default/"+id+"/rootfs",
-		Cmd:    	cmd,
-		Annotations: map[string]string{
-			"com.github.containers.virtcontainers.pkg.oci.config":	"{\"ociVersion\":\"1.0.1\",\"root\":{\"path\":\"rootfs\"},\"mounts\":[{\"destination\":\"/proc\",\"type\":\"proc\",\"source\":\"proc\"},{\"destination\":\"/dev\",\"type\":\"tmpfs\",\"source\":\"tmpfs\",\"options\":[\"nosuid\",\"strictatime\",\"mode=755\",\"size=65536k\"]},{\"destination\":\"/dev/pts\",\"type\":\"devpts\",\"source\":\"devpts\",\"options\":[\"nosuid\",\"noexec\",\"newinstance\",\"ptmxmode=0666\",\"mode=0620\",\"gid=5\"]},{\"destination\":\"/dev/shm\",\"type\":\"tmpfs\",\"source\":\"shm\",\"options\":[\"nosuid\",\"noexec\",\"nodev\",\"mode=1777\",\"size=65536k\"]},{\"destination\":\"/dev/mqueue\",\"type\":\"mqueue\",\"source\":\"mqueue\",\"options\":[\"nosuid\",\"noexec\",\"nodev\"]},{\"destination\":\"/sys\",\"type\":\"sysfs\",\"source\":\"sysfs\",\"options\":[\"nosuid\",\"noexec\",\"nodev\",\"ro\"]},{\"destination\":\"/run\",\"type\":\"tmpfs\",\"source\":\"tmpfs\",\"options\":[\"nosuid\",\"strictatime\",\"mode=755\",\"size=65536k\"]}],\"linux\":{\"resources\":{\"devices\":[{\"allow\":false,\"access\":\"rwm\"}]},\"cgroupsPath\":\"/default/"+id+"\",\"namespaces\":[{\"type\":\"pid\"},{\"type\":\"ipc\"},{\"type\":\"uts\"},{\"type\":\"mount\"},{\"type\":\"network\"}],\"maskedPaths\":[\"/proc/kcore\",\"/proc/latency_stats\",\"/proc/timer_list\",\"/proc/timer_stats\",\"/proc/sched_debug\",\"/sys/firmware\",\"/proc/scsi\"],\"readonlyPaths\":[\"/proc/asound\",\"/proc/bus\",\"/proc/fs\",\"/proc/irq\",\"/proc/sys\",\"/proc/sysrq-trigger\"]},\"process\":{\"user\":{\"uid\":0,\"gid\":0},\"args\":[\"sh\"],\"env\":[\"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\",\"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\"],\"cwd\":\"/\",\"rlimits\":[{\"type\":\"RLIMIT_NOFILE\",\"hard\":1024,\"soft\":1024}],\"noNewPrivileges\":true,\"capabilities\":{\"bounding\":[\"CAP_CHOWN\",\"CAP_DAC_OVERRIDE\",\"CAP_FSETID\",\"CAP_FOWNER\",\"CAP_MKNOD\",\"CAP_NET_RAW\",\"CAP_SETGID\",\"CAP_SETUID\",\"CAP_SETFCAP\",\"CAP_SETPCAP\",\"CAP_NET_BIND_SERVICE\",\"CAP_SYS_CHROOT\",\"CAP_KILL\",\"CAP_AUDIT_WRITE\"],\"effective\":[\"CAP_CHOWN\",\"CAP_DAC_OVERRIDE\",\"CAP_FSETID\",\"CAP_FOWNER\",\"CAP_MKNOD\",\"CAP_NET_RAW\",\"CAP_SETGID\",\"CAP_SETUID\",\"CAP_SETFCAP\",\"CAP_SETPCAP\",\"CAP_NET_BIND_SERVICE\",\"CAP_SYS_CHROOT\",\"CAP_KILL\",\"CAP_AUDIT_WRITE\"],\"inheritable\":[\"CAP_CHOWN\",\"CAP_DAC_OVERRIDE\",\"CAP_FSETID\",\"CAP_FOWNER\",\"CAP_MKNOD\",\"CAP_NET_RAW\",\"CAP_SETGID\",\"CAP_SETUID\",\"CAP_SETFCAP\",\"CAP_SETPCAP\",\"CAP_NET_BIND_SERVICE\",\"CAP_SYS_CHROOT\",\"CAP_KILL\",\"CAP_AUDIT_WRITE\"],\"permitted\":[\"CAP_CHOWN\",\"CAP_DAC_OVERRIDE\",\"CAP_FSETID\",\"CAP_FOWNER\",\"CAP_MKNOD\",\"CAP_NET_RAW\",\"CAP_SETGID\",\"CAP_SETUID\",\"CAP_SETFCAP\",\"CAP_SETPCAP\",\"CAP_NET_BIND_SERVICE\",\"CAP_SYS_CHROOT\",\"CAP_KILL\",\"CAP_AUDIT_WRITE\"]}}}",
-			"com.github.containers.virtcontainers.pkg.oci.bundle_path":	"/run/containerd/io.containerd.runtime.v1.linux/default/"+id,
-			"com.github.containers.virtcontainers.pkg.oci.container_type":	"pod_sandbox",
-		},
-		Mounts: 	[]vc.Mount{
+		ID:     id,
+		RootFs: "/run/containerd/io.containerd.runtime.v1.kata-runtime/default/" + id + "/rootfs",
+		Cmd:    cmd,
+		Mounts: []vc.Mount{
 			{
 				Destination: "/proc",
 				Type:        "proc",
@@ -169,70 +116,47 @@ func CreateSandbox(ctx context.Context, id string) error {
 				Source:      "tmpfs",
 				Options:     []string{"nosuid", "strictatime", "mode=755", "size=65536k"},
 			},
+			{
+				Destination: "/sys/fs/cgroup",
+				Type:        "cgroup",
+				Source:      "cgroup",
+				Options:     []string{"nosuid", "noexec", "nodev", "relatime", "ro"},
+			},
 		},
 	}
 
-	log.G(ctx).Infof("container config:  %v \n", container)
-
 	// Sets the hypervisor configuration.
 	hypervisorConfig := vc.HypervisorConfig{
-		KernelParams:	[]vc.Param{
-			vc.Param{
-				Key:	"ip",
-				Value:	"::::::"+id+"::off::",
-			},
-			// these params are used for rootfs image
-			// vc.Param{
-			// 	Key:	"init",
-			// 	Value:	"/usr/lib/systemd/systemd",
-			// },
-			// vc.Param{
-			// 	Key:	"systemd.unit",
-			// 	Value:	"kata-containers.target",
-			// },
-			// vc.Param{
-			// 	Key:	"systemd.mask",
-			// 	Value:	"systemd-networkd.service",
-			// },
-			// vc.Param{
-			// 	Key:	"systemd.mask",
-			// 	Value:	"systemd-networkd.socket",
-			// },
-			vc.Param{
-				Key:	"agent.log",
-				Value:	"debug",
-			},
-			vc.Param{
-				Key:	"qemu.cmdline",
-				Value:	"-D <logfile>",
+		KernelParams: []vc.Param{
+			{
+				Key:   "ip",
+				Value: "::::::" + id + "::off::",
 			},
 		},
 		KernelPath:     "/usr/share/kata-containers/vmlinuz.container",
 		InitrdPath:     "/usr/share/kata-containers/kata-containers-initrd.img",
 		HypervisorPath: "/usr/bin/qemu-lite-system-x86_64",
 
-		BlockDeviceDriver:	"virtio-scsi",
+		BlockDeviceDriver: "virtio-scsi",
 
-		HypervisorMachineType:	"pc",
+		HypervisorMachineType: "pc",
 
-		DefaultVCPUs:	uint32(1),
-		DefaultMaxVCPUs:	uint32(4),
+		DefaultVCPUs:    uint32(1),
+		DefaultMaxVCPUs: uint32(4),
 
-		DefaultMemSz:	uint32(2048),
+		DefaultMemSz: uint32(2048),
 
-		DefaultBridges:	uint32(1),
+		DefaultBridges: uint32(1),
 
-		EnableIOThreads:	true,
+		Mlock:   true,
+		Msize9p: uint32(8192),
 
-		Mlock:	true,
-		Msize9p:	uint32(8192),
-
-		Debug:	true,
+		Debug: true,
 	}
 
-	// Use KataAgent default values for the agent.
+	// Use KataAgent for the agent.
 	agConfig := vc.KataAgentConfig{
-		LongLiveConn:	true,
+		LongLiveConn: true,
 	}
 
 	// VM resources
@@ -245,7 +169,7 @@ func CreateSandbox(ctx context.Context, id string) error {
 	// - Hypervisor is QEMU
 	// - Agent is KataContainers
 	sandboxConfig := vc.SandboxConfig{
-		ID:	id,
+		ID: id,
 
 		VMConfig: vmConfig,
 
@@ -255,41 +179,27 @@ func CreateSandbox(ctx context.Context, id string) error {
 		AgentType:   vc.KataContainersAgent,
 		AgentConfig: agConfig,
 
-		ProxyType:	vc.KataBuiltInProxyType,
+		ProxyType: vc.KataBuiltInProxyType,
 
-		ShimType:	vc.KataBuiltInShimType,
-
-		NetworkModel:	vc.CNMNetworkModel,
-		NetworkConfig:	vc.NetworkConfig{
-			NumInterfaces:		1,
-			InterworkingModel:	2,
-		},
+		ShimType: vc.KataBuiltInShimType,
 
 		Containers: []vc.ContainerConfig{container},
 	}
-	log.G(ctx).Infoln("Sandbox: sandbox config: ", sandboxConfig)
-
-	log.G(ctx).Infoln("Sandbox: create kata sandbox")
 
 	sandbox, err := vc.CreateSandbox(sandboxConfig)
-	log.G(ctx).Infoln("Sandbox: config！！！")
 	if err != nil {
-		log.G(ctx).Errorln("Sandbox: config error！！！", err)
-		return errors.Wrapf(err, "Could not create sandbox")
+		return nil, errors.Wrapf(err, "Could not create sandbox")
 	}
-	log.G(ctx).Infof("Sandbox: create, VCSandbox is %v", sandbox)
 
-	return err
+	return sandbox, err
 }
 
 // StartSandbox starts a kata-runtime sandbox
 func StartSandbox(ctx context.Context, id string) error {
-	log.G(ctx).Infoln("Sandbox: start kata sandbox")
-	sandbox, err := vc.StartSandbox(id)
+	_, err := vc.StartSandbox(id)
 	if err != nil {
 		return errors.Wrapf(err, "Could not start sandbox")
 	}
-	log.G(ctx).Infof("Sandbox: start, VCSandbox is %v", sandbox)
 
 	return err
 }

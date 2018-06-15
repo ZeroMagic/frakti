@@ -17,23 +17,21 @@ limitations under the License.
 package kata
 
 import (
+	"context"
 	"fmt"
-    "context"
 	"sync"
 	"time"
 
-	cgroups "github.com/containerd/cgroups"
+	"github.com/containerd/cgroups"
+	"github.com/containerd/console"
 	eventstypes "github.com/containerd/containerd/api/events"
-	exchange "github.com/containerd/containerd/events/exchange"
-	log "github.com/containerd/containerd/log"
-    "github.com/containerd/containerd/runtime"
+	"github.com/containerd/containerd/events/exchange"
+	"github.com/containerd/containerd/runtime"
 	"github.com/gogo/protobuf/types"
-	"github.com/pkg/errors"
-	
-	"k8s.io/frakti/pkg/kata/proc"
-
 	vc "github.com/kata-containers/runtime/virtcontainers"
+	"github.com/pkg/errors"
 
+	"k8s.io/frakti/pkg/kata/proc"
 )
 
 // Task on a hypervisor based system
@@ -44,41 +42,37 @@ type Task struct {
 	namespace string
 	pid       uint32
 
-    cg        cgroups.Cgroup
-    monitor   runtime.TaskMonitor
-	events    *exchange.Exchange
-	
+	cg      cgroups.Cgroup
+	monitor runtime.TaskMonitor
+	events  *exchange.Exchange
+
 	processList map[string]proc.Process
 }
 
 func newTask(ctx context.Context, id, namespace string, pid uint32, monitor runtime.TaskMonitor, events *exchange.Exchange, opts runtime.CreateOpts, bundle *bundle) (*Task, error) {
-	// TODO(ZeroMagic): how to load cgroup when reconnecting
-	
-	config :=  &proc.InitConfig{
-		ID:			id,
-		Rootfs:		opts.Rootfs,
-		Terminal: 	opts.IO.Terminal,
-		Stdin:      opts.IO.Stdin,
-		Stdout:     opts.IO.Stdout,
-		Stderr:     opts.IO.Stderr,
+	config := &proc.InitConfig{
+		ID:       id,
+		Rootfs:   opts.Rootfs,
+		Terminal: opts.IO.Terminal,
+		Stdin:    opts.IO.Stdin,
+		Stdout:   opts.IO.Stdout,
+		Stderr:   opts.IO.Stderr,
 	}
 
-	log.G(ctx).Infoln("new init process")
 	init, err := proc.NewInit(ctx, bundle.path, bundle.workDir, namespace, int(pid), config)
 	if err != nil {
 		return nil, errors.Wrap(err, "new init process error")
 	}
 
 	processList := make(map[string]proc.Process)
-	processList[fmt.Sprintf("%d", pid)] = init
+	processList[id] = init
 
-	log.G(ctx).Infof("task id is %v, pid is %v  ", id, pid)
 	return &Task{
-		id:        id,
-		pid:       pid,
-		namespace: namespace,
-		monitor:   monitor,
-		events:    events,
+		id:          id,
+		pid:         pid,
+		namespace:   namespace,
+		monitor:     monitor,
+		events:      events,
 		processList: processList,
 	}, nil
 }
@@ -100,28 +94,25 @@ func (t *Task) Info() runtime.TaskInfo {
 // Start the task
 func (t *Task) Start(ctx context.Context) error {
 
-    // t.mu.Lock()
-	// hasCgroup := t.cg != nil
-	// t.mu.Unlock()
+	t.mu.Lock()
+	hasCgroup := t.cg != nil
+	t.mu.Unlock()
 
-	t.processList[fmt.Sprintf("%d", t.pid)].Start(ctx)
+	t.processList[t.id].Start(ctx)
 
+	if !hasCgroup {
+		cg, err := cgroups.Load(cgroups.V1, cgroups.PidPath(int(t.pid)))
+		if err != nil {
+			return err
+		}
+		t.mu.Lock()
+		t.cg = cg
+		t.mu.Unlock()
+		if err := t.monitor.Monitor(t); err != nil {
+			return err
+		}
+	}
 
-	// if !hasCgroup {
-	// 	log.G(ctx).Infoln("Task: load cgroups")
-	// 	cg, err := cgroups.Load(cgroups.V1, cgroups.PidPath(int(t.pid)))
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// 	t.mu.Lock()
-	// 	t.cg = cg
-	// 	t.mu.Unlock()
-	// 	if err := t.monitor.Monitor(t); err != nil {
-	// 		return err
-	// 	}
-	// }
-
-	log.G(ctx).Infoln("Task: start publishing")
 	t.events.Publish(ctx, runtime.TaskStartEventTopic, &eventstypes.TaskStart{
 		ContainerID: t.id,
 		Pid:         t.pid,
@@ -133,7 +124,6 @@ func (t *Task) Start(ctx context.Context) error {
 func (t *Task) State(ctx context.Context) (runtime.State, error) {
 
 	p := t.processList[t.id]
-	
 
 	state, err := p.Status(ctx)
 	if err != nil {
@@ -167,48 +157,48 @@ func (t *Task) State(ctx context.Context) (runtime.State, error) {
 }
 
 // Pause pauses the container process
-func (t *Task) Pause(context.Context) error {
-    return fmt.Errorf("task pause not implemented")
+func (t *Task) Pause(ctx context.Context) error {
+	return fmt.Errorf("task pause not implemented")
 }
 
 // Resume unpauses the container process
-func (t *Task) Resume(context.Context) error {
-    return fmt.Errorf("task resume not implemented")
+func (t *Task) Resume(ctx context.Context) error {
+	return fmt.Errorf("task resume not implemented")
 }
 
 // Exec adds a process into the container
-func (t *Task) Exec(context.Context, string, runtime.ExecOpts) (runtime.Process, error) {
-    return nil, fmt.Errorf("task exec not implemented")
+func (t *Task) Exec(ctx context.Context, id string, opts runtime.ExecOpts) (runtime.Process, error) {
+	return nil, fmt.Errorf("task exec not implemented")
 }
 
 // Pids returns all pids
-func (t *Task) Pids(context.Context) ([]runtime.ProcessInfo, error) {
-    return nil, fmt.Errorf("task pids not implemented")
+func (t *Task) Pids(ctx context.Context) ([]runtime.ProcessInfo, error) {
+	return nil, fmt.Errorf("task pids not implemented")
 }
 
 // Checkpoint checkpoints a container to an image with live system data
-func (t *Task) Checkpoint(context.Context, string, *types.Any) error {
-    return fmt.Errorf("task checkpoint not implemented")
+func (t *Task) Checkpoint(ctx context.Context, path string, options *types.Any) error {
+	return fmt.Errorf("task checkpoint not implemented")
 }
 
 // DeleteProcess deletes a specific exec process via its id
-func (t *Task) DeleteProcess(context.Context, string) (*runtime.Exit, error) {
-    return nil, fmt.Errorf("task delete process not implemented")
+func (t *Task) DeleteProcess(ctx context.Context, id string) (*runtime.Exit, error) {
+	return nil, fmt.Errorf("task delete process not implemented")
 }
 
 // Update sets the provided resources to a running task
-func (t *Task) Update(context.Context, *types.Any) error {
-    return fmt.Errorf("task update not implemented")
+func (t *Task) Update(ctx context.Context, resources *types.Any) error {
+	return fmt.Errorf("task update not implemented")
 }
 
 // Process returns a process within the task for the provided id
-func (t *Task) Process(context.Context, string) (runtime.Process, error) {
-    return nil, fmt.Errorf("task process not implemented")
+func (t *Task) Process(ctx context.Context, id string) (runtime.Process, error) {
+	return nil, fmt.Errorf("task process not implemented")
 }
 
 // Metrics returns runtime specific metrics for a task
-func (t *Task) Metrics(context.Context) (interface{}, error) {
-    return nil, fmt.Errorf("task metrics not implemented")
+func (t *Task) Metrics(ctx context.Context) (interface{}, error) {
+	return nil, fmt.Errorf("task metrics not implemented")
 }
 
 // CloseIO closes the provided IO on the task
@@ -223,21 +213,33 @@ func (t *Task) Kill(ctx context.Context, signal uint32, all bool) error {
 	if err != nil {
 		return errors.Wrap(err, "task kill error")
 	}
+
 	return nil
 }
 
 // ResizePty changes the side of the task's PTY to the provided width and height
 func (t *Task) ResizePty(ctx context.Context, size runtime.ConsoleSize) error {
-	return fmt.Errorf("task resizePty not implemented")
+	ws := console.WinSize{
+		Width:  uint16(size.Width),
+		Height: uint16(size.Height),
+	}
+
+	p := t.processList[t.id]
+	err := p.Resize(ws)
+	if err != nil {
+		return errors.Wrap(err, "task ResizePty error")
+	}
+
+	return nil
 }
 
 // Wait for the task to exit returning the status and timestamp
 func (t *Task) Wait(ctx context.Context) (*runtime.Exit, error) {
-	p := t.processList[fmt.Sprintf("%d", t.pid)]
+	p := t.processList[t.id]
 	p.Wait()
-    return &runtime.Exit{
-		Pid:		t.pid,
-		Status: 	uint32(p.ExitStatus()),
-		Timestamp:	time.Time{},
+	return &runtime.Exit{
+		Pid:       t.pid,
+		Status:    uint32(p.ExitStatus()),
+		Timestamp: time.Time{},
 	}, nil
 }

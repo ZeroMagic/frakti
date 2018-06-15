@@ -1,5 +1,3 @@
-// +build !windows
-
 /*
 Copyright 2018 The Kubernetes Authors.
 
@@ -19,16 +17,16 @@ limitations under the License.
 package proc
 
 import (
-	"fmt"
 	"context"
+	"fmt"
 	"io"
+	"os"
 	"path/filepath"
 	"sync"
 	"syscall"
 	"time"
-	"os"
 
-	console "github.com/containerd/console"
+	"github.com/containerd/console"
 	"github.com/containerd/containerd/log"
 	"github.com/containerd/containerd/mount"
 	"github.com/containerd/fifo"
@@ -36,6 +34,8 @@ import (
 
 	"k8s.io/frakti/pkg/kata/platform"
 	"k8s.io/frakti/pkg/kata/server"
+
+	vc "github.com/kata-containers/runtime/virtcontainers"
 )
 
 // InitPidFile name of the file that contains the init pid
@@ -55,24 +55,26 @@ type Init struct {
 	bundle   string
 	console  console.Console
 	platform platform.Platform
-	io		 IO
+	io       IO
 
-	exitStatus   int
-	exited   time.Time
-	pid      int
-	closers  []io.Closer
-	stdin    io.Closer
-	stdio    Stdio
-	rootfs   string
-	IoUID    int
-	IoGID    int
+	exitStatus int
+	exited     time.Time
+	pid        int
+	closers    []io.Closer
+	stdin      io.Closer
+	stdio      Stdio
+	rootfs     string
+	IoUID      int
+	IoGID      int
+
+	sandbox vc.VCSandbox
 }
 
 // NewInit returns a new init process
 func NewInit(ctx context.Context, path, workDir, namespace string, pid int, config *InitConfig) (*Init, error) {
 	var (
 		success bool
-		err 	error
+		err     error
 	)
 
 	rootfs := filepath.Join(path, "rootfs")
@@ -99,24 +101,25 @@ func NewInit(ctx context.Context, path, workDir, namespace string, pid int, conf
 	platform, err := platform.NewPlatform()
 
 	p := &Init{
-		id:       config.ID,
-		pid:	pid,
+		id:  config.ID,
+		pid: pid,
 		stdio: Stdio{
 			Stdin:    config.Stdin,
 			Stdout:   config.Stdout,
 			Stderr:   config.Stderr,
 			Terminal: config.Terminal,
 		},
-		rootfs:    rootfs,
-		bundle:		path,
-		workDir:   workDir,
-		platform:	platform,
-		exitStatus:0,
-		waitBlock: make(chan struct{}),
-		IoUID:     os.Getuid(),
-		IoGID:     os.Getuid(),
+		rootfs:     rootfs,
+		bundle:     path,
+		workDir:    workDir,
+		platform:   platform,
+		exitStatus: 0,
+		waitBlock:  make(chan struct{}),
+		IoUID:      os.Getuid(),
+		IoGID:      os.Getuid(),
 	}
 	p.initState = &createdState{p: p}
+
 	var socket *Socket
 	if config.Terminal {
 		if socket, err = NewTempConsoleSocket(); err != nil {
@@ -134,13 +137,10 @@ func NewInit(ctx context.Context, path, workDir, namespace string, pid int, conf
 	}
 
 	// create kata container
-	log.G(ctx).Infoln("Init: create sandbox")
-	err = server.CreateSandbox(ctx, config.ID)
+	p.sandbox, err = server.CreateSandbox(ctx, config.ID)
 	if err != nil {
-		log.G(ctx).Infoln("Init: error create sandbox")
 		return nil, errors.Wrap(err, "failed to create sandbox")
 	}
-	log.G(ctx).Infoln("Init: finish creating sandbox")
 
 	if config.Stdin != "" {
 		sc, err := fifo.OpenFifo(ctx, config.Stdin, syscall.O_WRONLY|syscall.O_NONBLOCK, 0)
@@ -169,7 +169,6 @@ func NewInit(ctx context.Context, path, workDir, namespace string, pid int, conf
 
 	copyWaitGroup.Wait()
 
-	
 	// TODO(ZeroMagic): create with checkpoint
 
 	success = true
@@ -205,7 +204,6 @@ func (p *Init) Stdin() io.Closer {
 	return p.stdin
 }
 
-
 // Stdio of the process
 func (p *Init) Stdio() Stdio {
 	return p.stdio
@@ -215,7 +213,7 @@ func (p *Init) Stdio() Stdio {
 func (p *Init) Status(ctx context.Context) (string, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	status, err := server.StatusContainer(p.id, p.id)
+	status, err := server.StatusContainer(p.sandbox.ID(), p.sandbox.ID())
 	if err != nil {
 		if os.IsNotExist(err) {
 			return "stopped", nil
@@ -238,10 +236,12 @@ func (p *Init) resize(ws console.WinSize) error {
 }
 
 func (p *Init) start(ctx context.Context) error {
-	log.G(ctx).Infoln("Init: start kata sandbox")
-	log.G(ctx).Infof("Init: init process id is %v, pid is %v  ", p.id, p.pid)
-	server.StartSandbox(ctx, p.id)
-	return fmt.Errorf("init process start is not implemented")
+	err := server.StartSandbox(ctx, p.sandbox.ID())
+	if err != nil {
+		return errors.Wrap(err, "failed to start sandbox")
+	}
+
+	return nil
 }
 
 func (p *Init) delete(ctx context.Context) error {
@@ -250,9 +250,12 @@ func (p *Init) delete(ctx context.Context) error {
 
 func (p *Init) kill(ctx context.Context, signal uint32, all bool) error {
 
-	server.KillContainer(p.id, p.id, syscall.Signal(signal), all)
+	err := server.KillContainer(p.sandbox.ID(), p.sandbox.ID(), syscall.Signal(signal), all)
+	if err != nil {
+		return errors.Wrap(err, "failed to kill container")
+	}
 
-	return fmt.Errorf("init process kill is not implemented")
+	return nil
 }
 
 func (p *Init) setExited(status int) {

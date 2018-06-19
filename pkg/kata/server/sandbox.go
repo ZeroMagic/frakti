@@ -87,11 +87,6 @@ func CreateSandbox(ctx context.Context, id string) (vc.VCSandbox, error) {
 		ID:     id,
 		RootFs: "/run/containerd/io.containerd.runtime.v1.kata-runtime/default/" + id + "/rootfs",
 		Cmd:    cmd,
-		Annotations: map[string]string{
-			annotations.ConfigJSONKey:	str,
-			annotations.BundlePathKey:	"/run/containerd/io.containerd.runtime.v1.kata-runtime/default/"+id,
-			annotations.ContainerTypeKey:	"pod_sandbox",
-		},
 	}
 
 	// Sets the hypervisor configuration.
@@ -167,6 +162,12 @@ func CreateSandbox(ctx context.Context, id string) (vc.VCSandbox, error) {
 		},
 
 		Containers: []vc.ContainerConfig{container},
+
+		Annotations: map[string]string{
+			annotations.ConfigJSONKey:	str,
+			annotations.BundlePathKey:	"/run/containerd/io.containerd.runtime.v1.kata-runtime/default/"+id,
+			annotations.ContainerTypeKey:	"pod_sandbox",
+		},
 	}
 
 	sandbox, err := vc.CreateSandbox(sandboxConfig)

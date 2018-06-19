@@ -83,7 +83,7 @@ func CreateSandbox(ctx context.Context, id string) (vc.VCSandbox, error) {
 		RootFs: "/run/containerd/io.containerd.runtime.v1.kata-runtime/default/" + id + "/rootfs",
 		Cmd:    cmd,
 		Annotations: map[string]string{
-			annotations.ConfigJSONKey:	configJ,
+			annotations.ConfigJSONKey:	str,
 			annotations.BundlePathKey:	"/run/containerd/io.containerd.runtime.v1.kata-runtime/default/"+id,
 			annotations.ContainerTypeKey:	"pod_sandbox",
 		},

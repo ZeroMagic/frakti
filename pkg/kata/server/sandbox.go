@@ -80,6 +80,7 @@ func CreateSandbox(ctx context.Context, id string) (vc.VCSandbox, error) {
 	str = strings.Replace(str, "effective", "Effective", -1)
 	str = strings.Replace(str, "inheritable", "Inheritable", -1)
 	str = strings.Replace(str, "permitted", "Permitted", -1)
+	str = strings.Replace(str, "true", "true,\"Ambient\":null", -1)
 
 	// Define the container command and bundle.
 	container := vc.ContainerConfig{

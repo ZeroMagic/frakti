@@ -19,10 +19,12 @@ package server
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"strings"
 
 	"github.com/containerd/containerd/runtime"
 	vc "github.com/kata-containers/runtime/virtcontainers"
+	"github.com/kata-containers/runtime/virtcontainers/pkg/annotations"
 	errors "github.com/pkg/errors"
 )
 
@@ -68,67 +70,37 @@ func CreateSandbox(ctx context.Context, id string) (vc.VCSandbox, error) {
 		NoNewPrivileges: true,
 	}
 
+	configFile := "/run/containerd/io.containerd.runtime.v1.kata-runtime/default/"+id+"/config.json"
+	configJ, err := ioutil.ReadFile(configFile)
+    if err != nil {
+        fmt.Print(err)
+    }
+    str := string(configJ)
+
 	// Define the container command and bundle.
 	container := vc.ContainerConfig{
 		ID:     id,
 		RootFs: "/run/containerd/io.containerd.runtime.v1.kata-runtime/default/" + id + "/rootfs",
 		Cmd:    cmd,
-		Mounts: []vc.Mount{
-			{
-				Destination: "/proc",
-				Type:        "proc",
-				Source:      "proc",
-				Options:     nil,
-			},
-			{
-				Destination: "/dev",
-				Type:        "tmpfs",
-				Source:      "tmpfs",
-				Options:     []string{"nosuid", "strictatime", "mode=755", "size=65536k"},
-			},
-			{
-				Destination: "/dev/pts",
-				Type:        "devpts",
-				Source:      "devpts",
-				Options:     []string{"nosuid", "noexec", "newinstance", "ptmxmode=0666", "mode=0620", "gid=5"},
-			},
-			{
-				Destination: "/dev/shm",
-				Type:        "tmpfs",
-				Source:      "shm",
-				Options:     []string{"nosuid", "noexec", "nodev", "mode=1777", "size=65536k"},
-			},
-			{
-				Destination: "/dev/mqueue",
-				Type:        "mqueue",
-				Source:      "mqueue",
-				Options:     []string{"nosuid", "noexec", "nodev"},
-			},
-			{
-				Destination: "/sys",
-				Type:        "sysfs",
-				Source:      "sysfs",
-				Options:     []string{"nosuid", "noexec", "nodev", "ro"},
-			},
-			{
-				Destination: "/run",
-				Type:        "tmpfs",
-				Source:      "tmpfs",
-				Options:     []string{"nosuid", "strictatime", "mode=755", "size=65536k"},
-			},
-			{
-				Destination: "/sys/fs/cgroup",
-				Type:        "cgroup",
-				Source:      "cgroup",
-				Options:     []string{"nosuid", "noexec", "nodev", "relatime", "ro"},
-			},
+		Annotations: map[string]string{
+			annotations.ConfigJSONKey:	configJ,
+			annotations.BundlePathKey:	"/run/containerd/io.containerd.runtime.v1.kata-runtime/default/"+id,
+			annotations.ContainerTypeKey:	"pod_sandbox",
 		},
 	}
 
 	// Sets the hypervisor configuration.
 	hypervisorConfig := vc.HypervisorConfig{
 		KernelParams: []vc.Param{
-			{
+			vc.Param{
+				Key:	"agent.log",
+				Value:	"debug",
+			},
+			vc.Param{
+				Key:	"qemu.cmdline",
+				Value:	"-D <logfile>",
+			},
+			vc.Param{
 				Key:   "ip",
 				Value: "::::::" + id + "::off::",
 			},
@@ -182,6 +154,12 @@ func CreateSandbox(ctx context.Context, id string) (vc.VCSandbox, error) {
 		ProxyType: vc.KataBuiltInProxyType,
 
 		ShimType: vc.KataBuiltInShimType,
+
+		NetworkModel:	vc.CNMNetworkModel,
+		NetworkConfig:	vc.NetworkConfig{
+			NumInterfaces:		1,
+			InterworkingModel:	2,
+		},
 
 		Containers: []vc.ContainerConfig{container},
 	}

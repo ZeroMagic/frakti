@@ -919,7 +919,7 @@ func (s *Sandbox) createNetwork() error {
 	s.networkNS = networkNS
 
 	logrus.FieldLogger(logrus.New()).WithFields(logrus.Fields{
-		"netNsPath":			netNsPathv,
+		"netNsPath":			netNsPath,
 		"networkNS":			networkNS,
 	}).Infof("[/virtcontainers/sandbox.go-createNetwork()]")
 

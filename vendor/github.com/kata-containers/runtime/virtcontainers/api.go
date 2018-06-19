@@ -45,6 +45,10 @@ func createSandboxFromConfig(sandboxConfig SandboxConfig) (*Sandbox, error) {
 		return nil, err
 	}
 
+	logrus.FieldLogger(logrus.New()).WithFields(logrus.Fields{
+		"sandboxConfig":		sandboxConfig,
+	}).Infof("[/virtcontainers/api.go-createSandboxFromConfig()]")
+
 	// Create the sandbox network
 	if err := s.createNetwork(); err != nil {
 		return nil, err

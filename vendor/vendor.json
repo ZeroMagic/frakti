@@ -1187,68 +1187,68 @@
 		{
 			"checksumSHA1": "WSIOwAofkrH4PdaxulB+UWF7lMM=",
 			"path": "github.com/kata-containers/runtime/virtcontainers",
-			"revision": "d64311df696ea9c0fde76f7ddd3a995f983229b2",
-			"revisionTime": "2018-06-19T06:46:23Z"
+			"revision": "0e62ad6f784ae590a9743c5df69b1bac699025b5",
+			"revisionTime": "2018-06-26T07:19:17Z"
 		},
 		{
 			"checksumSHA1": "um7b3dzHMGv5gYWD7PkJYXg3GYk=",
 			"path": "github.com/kata-containers/runtime/virtcontainers/device/api",
-			"revision": "d64311df696ea9c0fde76f7ddd3a995f983229b2",
-			"revisionTime": "2018-06-19T06:46:23Z"
+			"revision": "0e62ad6f784ae590a9743c5df69b1bac699025b5",
+			"revisionTime": "2018-06-26T07:19:17Z"
 		},
 		{
 			"checksumSHA1": "atSkjG/bu2JTOGdkNn6p3QIhE+Q=",
 			"path": "github.com/kata-containers/runtime/virtcontainers/device/config",
-			"revision": "d64311df696ea9c0fde76f7ddd3a995f983229b2",
-			"revisionTime": "2018-06-19T06:46:23Z"
+			"revision": "0e62ad6f784ae590a9743c5df69b1bac699025b5",
+			"revisionTime": "2018-06-26T07:19:17Z"
 		},
 		{
 			"checksumSHA1": "/WsABM+GBjJ4EjnMsVPuuRL9bvg=",
 			"path": "github.com/kata-containers/runtime/virtcontainers/device/drivers",
-			"revision": "d64311df696ea9c0fde76f7ddd3a995f983229b2",
-			"revisionTime": "2018-06-19T06:46:23Z"
+			"revision": "0e62ad6f784ae590a9743c5df69b1bac699025b5",
+			"revisionTime": "2018-06-26T07:19:17Z"
 		},
 		{
 			"checksumSHA1": "6L+5ARELyAg2ALBwlyOIaL62T94=",
 			"path": "github.com/kata-containers/runtime/virtcontainers/device/manager",
-			"revision": "d64311df696ea9c0fde76f7ddd3a995f983229b2",
-			"revisionTime": "2018-06-19T06:46:23Z"
+			"revision": "0e62ad6f784ae590a9743c5df69b1bac699025b5",
+			"revisionTime": "2018-06-26T07:19:17Z"
 		},
 		{
 			"checksumSHA1": "CUKWBapaiocsSxotatsO8ajWLQg=",
 			"path": "github.com/kata-containers/runtime/virtcontainers/pkg/annotations",
-			"revision": "d64311df696ea9c0fde76f7ddd3a995f983229b2",
-			"revisionTime": "2018-06-19T06:46:23Z"
+			"revision": "0e62ad6f784ae590a9743c5df69b1bac699025b5",
+			"revisionTime": "2018-06-26T07:19:17Z"
 		},
 		{
 			"checksumSHA1": "7ffSue8Mw9f+92NhIFqN/CBSlL8=",
 			"path": "github.com/kata-containers/runtime/virtcontainers/pkg/cni",
-			"revision": "d64311df696ea9c0fde76f7ddd3a995f983229b2",
-			"revisionTime": "2018-06-19T06:46:23Z"
+			"revision": "0e62ad6f784ae590a9743c5df69b1bac699025b5",
+			"revisionTime": "2018-06-26T07:19:17Z"
 		},
 		{
 			"checksumSHA1": "3p+i119YEBXFEj202FVqWaC9PBs=",
 			"path": "github.com/kata-containers/runtime/virtcontainers/pkg/hyperstart",
-			"revision": "d64311df696ea9c0fde76f7ddd3a995f983229b2",
-			"revisionTime": "2018-06-19T06:46:23Z"
+			"revision": "0e62ad6f784ae590a9743c5df69b1bac699025b5",
+			"revisionTime": "2018-06-26T07:19:17Z"
 		},
 		{
 			"checksumSHA1": "AaPyBRzKfRDwA1PQj94KsHQCBNg=",
 			"path": "github.com/kata-containers/runtime/virtcontainers/pkg/nsenter",
-			"revision": "d64311df696ea9c0fde76f7ddd3a995f983229b2",
-			"revisionTime": "2018-06-19T06:46:23Z"
+			"revision": "0e62ad6f784ae590a9743c5df69b1bac699025b5",
+			"revisionTime": "2018-06-26T07:19:17Z"
 		},
 		{
 			"checksumSHA1": "qfcyNzIPEnZf1DigAyyk5COcS5c=",
 			"path": "github.com/kata-containers/runtime/virtcontainers/pkg/uuid",
-			"revision": "d64311df696ea9c0fde76f7ddd3a995f983229b2",
-			"revisionTime": "2018-06-19T06:46:23Z"
+			"revision": "0e62ad6f784ae590a9743c5df69b1bac699025b5",
+			"revisionTime": "2018-06-26T07:19:17Z"
 		},
 		{
 			"checksumSHA1": "R1nAq1jqqVAUoDIae7BKhXaSOKg=",
 			"path": "github.com/kata-containers/runtime/virtcontainers/utils",
-			"revision": "d64311df696ea9c0fde76f7ddd3a995f983229b2",
-			"revisionTime": "2018-06-19T06:46:23Z"
+			"revision": "0e62ad6f784ae590a9743c5df69b1bac699025b5",
+			"revisionTime": "2018-06-26T07:19:17Z"
 		},
 		{
 			"checksumSHA1": "aodj/cITRyuaZSh84DDhrZjh76U=",

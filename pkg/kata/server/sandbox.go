@@ -168,6 +168,8 @@ func CreateSandbox(ctx context.Context, id string) (vc.VCSandbox, error) {
 			annotations.BundlePathKey:	"/run/containerd/io.containerd.runtime.v1.kata-runtime/default/"+id,
 			annotations.ContainerTypeKey:	"pod_sandbox",
 		},
+
+		ShmSize:	uint64(67108864),
 	}
 
 	sandbox, err := vc.CreateSandbox(sandboxConfig)

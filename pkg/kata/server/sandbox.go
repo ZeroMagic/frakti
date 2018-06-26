@@ -41,6 +41,18 @@ func CreateSandbox(ctx context.Context, id string) (vc.VCSandbox, error) {
 		},
 	}
 
+	configFile := "/run/containerd/io.containerd.runtime.v1.kata-runtime/default/"+id+"/config.json"
+	configJ, err := ioutil.ReadFile(configFile)
+    if err != nil {
+        fmt.Print(err)
+    }
+	str := string(configJ)
+	str = strings.Replace(str, "bounding", "Bounding", -1)
+	str = strings.Replace(str, "effective", "Effective", -1)
+	str = strings.Replace(str, "inheritable", "Inheritable", -1)
+	str = strings.Replace(str, "permitted", "Permitted", -1)
+	str = strings.Replace(str, "true", "true,\"Ambient\":null", -1)
+
 	cmd := vc.Cmd{
 		Args:    strings.Split("sh", " "),
 		Envs:    envs,
@@ -67,20 +79,67 @@ func CreateSandbox(ctx context.Context, id string) (vc.VCSandbox, error) {
 				"CAP_NET_BIND_SERVICE", "CAP_SYS_CHROOT", "CAP_KILL", "CAP_AUDIT_WRITE",
 			},
 		},
+		User:	"0",
+		PrimaryGroup:	"0",
+		Annotations: map[string]string{
+			annotations.ConfigJSONKey:	str,
+			annotations.BundlePathKey:	"/run/containerd/io.containerd.runtime.v1.kata-runtime/default/"+id,
+			annotations.ContainerTypeKey:	"pod_sandbox",
+		},
+		
+		Mounts: 	[]vc.Mount{
+			{
+				Source:      "proc",
+				Destination: "/proc",
+				Type:        "proc",
+				Options:     nil,
+				ReadOnly:	false,
+			},
+			{
+				Source:      "tmpfs",
+				Destination: "/dev",
+				Type:        "tmpfs",
+				Options:     []string{"nosuid", "strictatime", "mode=755", "size=65536k"},
+				ReadOnly:	false,
+			},
+			{
+				Source:      "devpts",
+				Destination: "/dev/pts",
+				Type:        "devpts",
+				Options:     []string{"nosuid", "noexec", "newinstance", "ptmxmode=0666", "mode=0620", "gid=5"},
+				ReadOnly:	false,
+			},
+			{
+				Source:      "shm",
+				Destination: "/dev/shm",
+				Type:        "tmpfs",
+				Options:     []string{"nosuid", "noexec", "nodev", "mode=1777", "size=65536k"},
+				ReadOnly:	false,
+			},
+			{
+				Source:      "mqueue",
+				Destination: "/dev/mqueue",
+				Type:        "mqueue",
+				Options:     []string{"nosuid", "noexec", "nodev"},
+				ReadOnly:	false,
+			},
+			{
+				Source:      "sysfs",
+				Destination: "/sys",
+				Type:        "sysfs",
+				Options:     []string{"nosuid", "noexec", "nodev", "ro"},
+				ReadOnly:	false,
+			},
+			{
+				Source:      "tmpfs",
+				Destination: "/run",
+				Type:        "tmpfs",
+				Options:     []string{"nosuid", "strictatime", "mode=755", "size=65536k"},
+				ReadOnly:	false,
+			},
+		},
 		NoNewPrivileges: true,
 	}
-
-	configFile := "/run/containerd/io.containerd.runtime.v1.kata-runtime/default/"+id+"/config.json"
-	configJ, err := ioutil.ReadFile(configFile)
-    if err != nil {
-        fmt.Print(err)
-    }
-	str := string(configJ)
-	str = strings.Replace(str, "bounding", "Bounding", -1)
-	str = strings.Replace(str, "effective", "Effective", -1)
-	str = strings.Replace(str, "inheritable", "Inheritable", -1)
-	str = strings.Replace(str, "permitted", "Permitted", -1)
-	str = strings.Replace(str, "true", "true,\"Ambient\":null", -1)
 
 	// Define the container command and bundle.
 	container := vc.ContainerConfig{
@@ -166,7 +225,6 @@ func CreateSandbox(ctx context.Context, id string) (vc.VCSandbox, error) {
 		Annotations: map[string]string{
 			annotations.ConfigJSONKey:	str,
 			annotations.BundlePathKey:	"/run/containerd/io.containerd.runtime.v1.kata-runtime/default/"+id,
-			annotations.ContainerTypeKey:	"pod_sandbox",
 		},
 
 		ShmSize:	uint64(67108864),

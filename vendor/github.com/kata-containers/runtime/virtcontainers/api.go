@@ -45,10 +45,6 @@ func createSandboxFromConfig(sandboxConfig SandboxConfig) (*Sandbox, error) {
 		return nil, err
 	}
 
-	logrus.FieldLogger(logrus.New()).WithFields(logrus.Fields{
-		"sandboxConfig":		sandboxConfig,
-	}).Infof("[/virtcontainers/api.go-createSandboxFromConfig()]")
-
 	// Create the sandbox network
 	if err := s.createNetwork(); err != nil {
 		return nil, err
@@ -513,12 +509,12 @@ func statusContainer(sandbox *Sandbox, containerID string) (ContainerStatus, err
 			}
 
 			// logrus.FieldLogger(logrus.New()).WithFields(logrus.Fields{
-			// 	"sandboxID":		sandbox.ID(),
-			// 	"containerID":		containerID,
-			// 	"container.state":			container.state,
-			// 	"container.process.Pid":			container.process.Pid,
-			// 	"container.config.RootFs":		container.config.RootFs,
-			// 	"container.config.Annotations":		container.config.Annotations,
+			// 	"sandboxID":                    sandbox.ID(),
+			// 	"containerID":                  containerID,
+			// 	"container.state":              container.state,
+			// 	"container.process.Pid":        container.process.Pid,
+			// 	"container.config.RootFs":      container.config.RootFs,
+			// 	"container.config.Annotations": container.config.Annotations,
 			// }).Infof("[/cli/state.go-state]")
 
 			return ContainerStatus{

@@ -23,17 +23,6 @@ import (
 	deviceManager "github.com/kata-containers/runtime/virtcontainers/device/manager"
 )
 
-// controlSocket is the sandbox control socket.
-// It is an hypervisor resource, and for example qemu's control
-// socket is the QMP one.
-const controlSocket = "ctl"
-
-// monitorSocket is the sandbox monitoring socket.
-// It is an hypervisor resource, and is a qmp socket in the qemu case.
-// This is a socket that any monitoring entity will listen to in order
-// to understand if the VM is still alive or not.
-const monitorSocket = "mon"
-
 // vmStartTimeout represents the time in seconds a sandbox can wait before
 // to consider the VM starting operation failed.
 const vmStartTimeout = 10
@@ -358,6 +347,9 @@ type SandboxConfig struct {
 	Annotations map[string]string
 
 	ShmSize uint64
+
+	// SharePidNs sets all containers to share the same sandbox level pid namespace.
+	SharePidNs bool
 }
 
 // valid checks that the sandbox configuration is valid.
@@ -462,7 +454,8 @@ type Sandbox struct {
 
 	wg *sync.WaitGroup
 
-	shmSize uint64
+	shmSize    uint64
+	sharePidNs bool
 }
 
 // ID returns the sandbox identifier string.
@@ -743,6 +736,7 @@ func newSandbox(sandboxConfig SandboxConfig) (*Sandbox, error) {
 		annotationsLock: &sync.RWMutex{},
 		wg:              &sync.WaitGroup{},
 		shmSize:         sandboxConfig.ShmSize,
+		sharePidNs:      sandboxConfig.SharePidNs,
 	}
 
 	if err = globalSandboxList.addSandbox(s); err != nil {
@@ -919,8 +913,8 @@ func (s *Sandbox) createNetwork() error {
 	s.networkNS = networkNS
 
 	logrus.FieldLogger(logrus.New()).WithFields(logrus.Fields{
-		"netNsPath":			netNsPath,
-		"networkNS":			networkNS,
+		"netNsPath": netNsPath,
+		"networkNS": networkNS,
 	}).Infof("[/virtcontainers/sandbox.go-createNetwork()]")
 
 	// Store the network
@@ -928,11 +922,7 @@ func (s *Sandbox) createNetwork() error {
 }
 
 func (s *Sandbox) removeNetwork() error {
-	if s.networkNS.NetNsCreated {
-		return s.network.remove(s, s.networkNS)
-	}
-
-	return nil
+	return s.network.remove(s, s.networkNS, s.networkNS.NetNsCreated)
 }
 
 // startVM starts the VM.
@@ -1135,7 +1125,7 @@ func (s *Sandbox) StatsContainer(containerID string) (ContainerStats, error) {
 func (s *Sandbox) createContainers() error {
 	for _, contConfig := range s.config.Containers {
 		logrus.FieldLogger(logrus.New()).WithFields(logrus.Fields{
-			"containerConfig":			contConfig,
+			"containerConfig": contConfig,
 		}).Infof("[/virtcontainers/sandbox.go-createContainers()]")
 		newContainer, err := createContainer(s, contConfig)
 		if err != nil {
@@ -1192,6 +1182,13 @@ func (s *Sandbox) stop() error {
 	s.Logger().Info("Stopping VM")
 	if err := s.hypervisor.stopSandbox(); err != nil {
 		return err
+	}
+
+	// vm is stopped remove the sandbox shared dir
+	if err := s.agent.cleanupSandbox(s); err != nil {
+		// cleanup resource failed shouldn't block destroy sandbox
+		// just raise a warning
+		s.Logger().WithError(err).Warnf("cleanup sandbox failed")
 	}
 
 	return s.setSandboxState(StateStopped)

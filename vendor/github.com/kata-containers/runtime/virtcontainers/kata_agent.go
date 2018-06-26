@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -77,9 +78,13 @@ type KataAgentState struct {
 }
 
 type kataAgent struct {
-	shim         shim
-	proxy        proxy
-	client       *kataclient.AgentClient
+	shim  shim
+	proxy proxy
+
+	// lock protects the client pointer
+	sync.Mutex
+	client *kataclient.AgentClient
+
 	reqHandlers  map[string]reqFunc
 	state        KataAgentState
 	keepConn     bool
@@ -150,17 +155,24 @@ func (k *kataAgent) init(sandbox *Sandbox, config interface{}) (err error) {
 		return fmt.Errorf("Invalid config type")
 	}
 
+	sandbox.config.ProxyType = KataBuiltInProxyType
 	k.proxy, err = newProxy(sandbox.config.ProxyType)
 	if err != nil {
 		return err
 	}
 
+	sandbox.config.ShimType = KataBuiltInShimType
 	k.shim, err = newShim(sandbox.config.ShimType)
 	if err != nil {
 		return err
 	}
 
 	k.proxyBuiltIn = isProxyBuiltIn(sandbox.config.ProxyType)
+
+	if k.proxyBuiltIn {
+			k.keepConn = true
+	}
+		
 
 	// Fetch agent runtime info.
 	if err := sandbox.storage.fetchAgentState(sandbox.id, &k.state); err != nil {
@@ -447,7 +459,7 @@ func (k *kataAgent) startSandbox(sandbox *Sandbox) error {
 		"sandbox-id": sandbox.id,
 		"proxy-pid":  pid,
 		"proxy-url":  uri,
-		"agentURL":	agentURL,
+		"agentURL":   agentURL,
 	}).Info("proxy started")
 
 	hostname := sandbox.config.Hostname
@@ -463,7 +475,7 @@ func (k *kataAgent) startSandbox(sandbox *Sandbox) error {
 		return err
 	}
 	logrus.FieldLogger(logrus.New()).WithFields(logrus.Fields{
-		"interfaces":			interfaces,
+		"interfaces": interfaces,
 	}).Infof("[/virtcontainers/kata_agent.go-startSandbox()]")
 	for _, ifc := range interfaces {
 		// send update interface request
@@ -532,11 +544,11 @@ func (k *kataAgent) startSandbox(sandbox *Sandbox) error {
 	req := &grpc.CreateSandboxRequest{
 		Hostname:     hostname,
 		Storages:     storages,
-		SandboxPidns: false,
+		SandboxPidns: sandbox.sharePidNs,
 	}
 
 	logrus.FieldLogger(logrus.New()).WithFields(logrus.Fields{
-		"Hostname":			hostname,
+		"Hostname":   hostname,
 		"Driver":     kata9pDevType,
 		"Source":     mountGuest9pTag,
 		"MountPoint": kataGuestSharedDir,
@@ -559,6 +571,10 @@ func (k *kataAgent) stopSandbox(sandbox *Sandbox) error {
 	}
 
 	return k.proxy.stop(sandbox, k.state.ProxyPid)
+}
+
+func (k *kataAgent) cleanupSandbox(sandbox *Sandbox) error {
+	return os.RemoveAll(filepath.Join(kataHostSharedDir, sandbox.id))
 }
 
 func (k *kataAgent) replaceOCIMountSource(spec *specs.Spec, guestMounts []Mount) error {
@@ -963,7 +979,14 @@ func (k *kataAgent) stopContainer(sandbox *Sandbox, c Container) error {
 		return err
 	}
 
-	return bindUnmountContainerRootfs(kataHostSharedDir, sandbox.id, c.id)
+	if err := bindUnmountContainerRootfs(kataHostSharedDir, sandbox.id, c.id); err != nil {
+		return err
+	}
+
+	// since rootfs is umounted it's safe to remove the dir now
+	rootPathParent := filepath.Join(kataHostSharedDir, sandbox.id, c.id)
+
+	return os.RemoveAll(rootPathParent)
 }
 
 func (k *kataAgent) signalProcess(c *Container, processID string, signal syscall.Signal, all bool) error {
@@ -1090,6 +1113,14 @@ func (k *kataAgent) statsContainer(sandbox *Sandbox, c Container) (*ContainerSta
 }
 
 func (k *kataAgent) connect() error {
+	// lockless quick pass
+	if k.client != nil {
+		return nil
+	}
+
+	// This is for the first connection only, to prevent race
+	k.Lock()
+	defer k.Unlock()
 	if k.client != nil {
 		return nil
 	}
@@ -1106,6 +1137,9 @@ func (k *kataAgent) connect() error {
 }
 
 func (k *kataAgent) disconnect() error {
+	k.Lock()
+	defer k.Unlock()
+
 	if k.client == nil {
 		return nil
 	}

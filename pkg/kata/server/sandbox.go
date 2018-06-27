@@ -229,6 +229,7 @@ func CreateSandbox(ctx context.Context, id string) (vc.VCSandbox, error) {
 		},
 
 		ShmSize:	uint64(67108864),
+		SharePidNs: false,
 	}
 
 	sandbox, err := vc.CreateSandbox(sandboxConfig)

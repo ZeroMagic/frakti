@@ -191,7 +191,7 @@ func CreateSandbox(ctx context.Context, id string) (vc.VCSandbox, error) {
 
 	// VM resources
 	vmConfig := vc.Resources{
-		Memory: 2048,
+		Memory: uint(2048),
 	}
 
 	// The sandbox configuration:
@@ -210,8 +210,10 @@ func CreateSandbox(ctx context.Context, id string) (vc.VCSandbox, error) {
 		AgentConfig: agConfig,
 
 		ProxyType: vc.KataBuiltInProxyType,
+		ProxyConfig: vc.ProxyConfig{},
 
 		ShimType: vc.KataBuiltInShimType,
+		ShimConfig: vc.ShimConfig{},
 
 		NetworkModel:	vc.CNMNetworkModel,
 		NetworkConfig:	vc.NetworkConfig{

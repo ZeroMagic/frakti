@@ -549,6 +549,9 @@ func DialContext(ctx context.Context, target string, opts ...DialOption) (conn *
 	// resolverWrapper.
 	cc.resolverWrapper.start()
 
+	logrus.FieldLogger(logrus.New()).WithFields(logrus.Fields{
+		"clientConn":	cc,
+	}).Infof("[/vendor/google.golang.org/grpc/clientconn.go-DialContext()]", time.Now())
 	// A blocking dial blocks until the clientConn is ready.
 	if cc.dopts.block {
 		for {

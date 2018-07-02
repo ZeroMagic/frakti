@@ -174,7 +174,7 @@ func CreateSandbox(ctx context.Context, id string) (vc.VCSandbox, error) {
 		DefaultVCPUs:    uint32(1),
 		DefaultMaxVCPUs: uint32(4),
 
-		DefaultMemSz: uint32(2048),
+		DefaultMemSz: uint32(128),
 
 		DefaultBridges: uint32(1),
 
@@ -191,7 +191,7 @@ func CreateSandbox(ctx context.Context, id string) (vc.VCSandbox, error) {
 
 	// VM resources
 	vmConfig := vc.Resources{
-		Memory: uint(2048),
+		Memory: uint(128),
 	}
 
 	// The sandbox configuration:

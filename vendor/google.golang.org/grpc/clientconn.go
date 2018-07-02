@@ -43,6 +43,8 @@ import (
 	"google.golang.org/grpc/stats"
 	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/transport"
+
+	"github.com/sirupsen/logrus"
 )
 
 var (
@@ -551,16 +553,27 @@ func DialContext(ctx context.Context, target string, opts ...DialOption) (conn *
 	if cc.dopts.block {
 		for {
 			s := cc.GetState()
+			logrus.FieldLogger(logrus.New()).WithFields(logrus.Fields{
+				"clientConn state":	s,
+				"connectivity.Ready":    connectivity.Ready,
+			}).Infof("[/vendor/google.golang.org/grpc/clientconn.go-DialContext()]")
 			if s == connectivity.Ready {
 				break
 			}
 			if !cc.WaitForStateChange(ctx, s) {
 				// ctx got timeout or canceled.
+				logrus.FieldLogger(logrus.New()).WithFields(logrus.Fields{
+					"ctx.Err()":	ctx.Err(),
+					"clientConn state":	s,
+				}).Infof("[/vendor/google.golang.org/grpc/clientconn.go-DialContext()]")
 				return nil, ctx.Err()
 			}
 		}
 	}
-
+	logrus.FieldLogger(logrus.New()).WithFields(logrus.Fields{
+		"clientConn":	cc,
+		"clientConn state":	cc.GetState(),
+	}).Infof("[/vendor/google.golang.org/grpc/clientconn.go-DialContext()]")
 	return cc, nil
 }
 

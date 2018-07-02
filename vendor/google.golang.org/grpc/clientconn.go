@@ -481,12 +481,12 @@ func DialContext(ctx context.Context, target string, opts ...DialOption) (conn *
 	if cc.dopts.bs == nil {
 		cc.dopts.bs = DefaultBackoffConfig
 	}
-	if cc.dopts.resolverBuilder == nil {
-		logrus.FieldLogger(logrus.New()).WithFields(logrus.Fields{
-			"clientConn":	cc,
-		}).Infof("[/vendor/google.golang.org/grpc/clientconn.go-DialContext()]", time.Now())	
+	if cc.dopts.resolverBuilder == nil {	
 		// Only try to parse target when resolver builder is not already set.
 		cc.parsedTarget = parseTarget(cc.target)
+		logrus.FieldLogger(logrus.New()).WithFields(logrus.Fields{
+			"cc.parsedTarget":	cc.parsedTarget,
+		}).Infof("[/vendor/google.golang.org/grpc/clientconn.go-DialContext()]", time.Now())
 		grpclog.Infof("parsed scheme: %q", cc.parsedTarget.Scheme)
 		cc.dopts.resolverBuilder = resolver.Get(cc.parsedTarget.Scheme)
 		logrus.FieldLogger(logrus.New()).WithFields(logrus.Fields{

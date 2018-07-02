@@ -554,29 +554,26 @@ func DialContext(ctx context.Context, target string, opts ...DialOption) (conn *
 		for {
 			s := cc.GetState()
 			logrus.FieldLogger(logrus.New()).WithFields(logrus.Fields{
-				"time":	time.Now(),
 				"clientConn state":	s,
 				"connectivity.Ready":    connectivity.Ready,
-			}).Infof("[/vendor/google.golang.org/grpc/clientconn.go-DialContext()]")
+			}).Infof("[/vendor/google.golang.org/grpc/clientconn.go-DialContext()]", time.Now())
 			if s == connectivity.Ready {
 				break
 			}
 			if !cc.WaitForStateChange(ctx, s) {
 				// ctx got timeout or canceled.
 				logrus.FieldLogger(logrus.New()).WithFields(logrus.Fields{
-					"time":	time.Now(),
 					"ctx.Err()":	ctx.Err(),
 					"clientConn state":	s,
-				}).Infof("[/vendor/google.golang.org/grpc/clientconn.go-DialContext()]")
+				}).Infof("[/vendor/google.golang.org/grpc/clientconn.go-DialContext()]", time.Now())
 				return nil, ctx.Err()
 			}
 		}
 	}
 	logrus.FieldLogger(logrus.New()).WithFields(logrus.Fields{
-		"time":	time.Now(),
 		"clientConn":	cc,
 		"clientConn state":	cc.GetState(),
-	}).Infof("[/vendor/google.golang.org/grpc/clientconn.go-DialContext()]")
+	}).Infof("[/vendor/google.golang.org/grpc/clientconn.go-DialContext()]", time.Now())
 	return cc, nil
 }
 

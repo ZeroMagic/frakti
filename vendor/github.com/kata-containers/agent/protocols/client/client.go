@@ -57,7 +57,7 @@ func NewAgentClient(sock string, enableYamux bool) (*AgentClient, error) {
 		"grpcAddr":    grpcAddr,
 		"parsedAddr":  parsedAddr,
 		"enableYamux": enableYamux,
-	}).Infof("[/vendor/github.com/kata-containers/agent/protocols/client/client.go-NewAgentClient()]")
+	}).Infof("[/vendor/github.com/kata-containers/agent/protocols/client/client.go-NewAgentClient()]", time.Now())
 	dialOpts := []grpc.DialOption{grpc.WithInsecure(), grpc.WithBlock()}
 	dialOpts = append(dialOpts, grpc.WithDialer(agentDialer(parsedAddr, enableYamux)))
 	ctx := context.Background()

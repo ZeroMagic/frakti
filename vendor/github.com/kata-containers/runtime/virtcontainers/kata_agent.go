@@ -482,6 +482,7 @@ func (k *kataAgent) startSandbox(sandbox *Sandbox) error {
 		ifcReq := &grpc.UpdateInterfaceRequest{
 			Interface: ifc,
 		}
+		logrus.FieldLogger(logrus.New()).Infof("[/virtcontainers/kata_agent.go-startSandbox()-interfaces]")
 		resultingInterface, err := k.sendReq(ifcReq)
 		if err != nil {
 			k.Logger().WithFields(logrus.Fields{
@@ -499,6 +500,7 @@ func (k *kataAgent) startSandbox(sandbox *Sandbox) error {
 			},
 		}
 
+		logrus.FieldLogger(logrus.New()).Infof("[/virtcontainers/kata_agent.go-startSandbox()-route]")
 		resultingRoutes, err := k.sendReq(routesReq)
 		if err != nil {
 			k.Logger().WithFields(logrus.Fields{

@@ -37,6 +37,7 @@ type execProcess struct {
 	mu         sync.Mutex
 	id         string
 	pid        int
+	token      string
 
 	exitStatus int
 	exited     time.Time
@@ -44,7 +45,6 @@ type execProcess struct {
 	stdout     io.Reader
 	stderr     io.Reader
 	stdio      Stdio
-	path       string
 	spec       specs.Process
 
 	parent    *Init
@@ -84,7 +84,12 @@ func (e *execProcess) Stdio() Stdio {
 }
 
 func (e *execProcess) Status(ctx context.Context) (string, error) {
-	return "", fmt.Errorf("exec process status is not implemented")
+	s, err := e.parent.Status(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	return s, nil
 }
 
 func (e *execProcess) Wait() {
@@ -92,11 +97,7 @@ func (e *execProcess) Wait() {
 }
 
 func (e *execProcess) resize(ws console.WinSize) error {
-	return fmt.Errorf("exec process resize is not implemented")
-}
-
-func (e *execProcess) start(ctx context.Context) error {
-	return fmt.Errorf("exec process start is not implemented")
+	return e.parent.sandbox.WinsizeProcess(p.sandbox.ID(), p.id, uint32(ws.Height), uint32(ws.Width))
 }
 
 func (e *execProcess) delete(ctx context.Context) error {

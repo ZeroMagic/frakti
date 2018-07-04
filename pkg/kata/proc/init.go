@@ -244,3 +244,54 @@ func (p *Init) resume(ctx context.Context) error {
 	}
 	return nil
 }
+
+// exec returns a new exec'd process
+func (p *Init) exec(context context.Context, id string , conf *ExecConfig) (proc.Process, error) {
+	var spec specs.Process
+	if err := json.Unmarshal(conf.Spec.Value, &spec); err != nil {
+		return nil, err
+	}
+	spec.Terminal = conf.Terminal
+
+	cmd := vc.Cmd{
+		Args:				spec.Args,
+		Envs:				[]vc.EnvVar{},
+		User:				spec.User.UID,
+		PrimaryGroup:		spec.User.GID,
+		WorkDir:			spec.Cwd,
+		Capabilities:		*spec.LinuxCapabilities,
+		Interactive:		spec.Terminal,
+		Detach:				!spec.Terminal,
+		NoNewPrivileges:	spec.NoNewPrivileges,
+	}
+
+	_, process, err := p.sandbox.EnterContainer(p.sandbox.ID(), cmd)
+	if err != nil {
+		return errors.Wrapf(err, "cannot enter container %s", containerID)
+	}
+
+	stdin, stdout, stderr, err := p.sandbox.IOStream(containerID, process.Token)
+	if err != nil {
+		return errors.Wrapf(err, "cannot enter container %s", containerID)
+	}
+
+	e := &execProcess{
+		id:     conf.ID,
+		pid:	process.Pid,
+		token:	process.Token,
+		parent: p,
+		stdin:	stdin,
+		stdout:	stdout,
+		stderr:	stderr,
+		stdio: proc.Stdio{
+			Stdin:    conf.Stdin,
+			Stdout:   conf.Stdout,
+			Stderr:   conf.Stderr,
+			Terminal: conf.Terminal,
+		},
+		spec:   spec,
+		waitBlock: make(chan struct{}),
+	}
+	e.State = &execCreatedState{p: e}
+	return e, nil
+}

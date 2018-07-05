@@ -18,6 +18,7 @@ package proc
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -29,6 +30,7 @@ import (
 	"github.com/containerd/console"
 	"github.com/containerd/containerd/log"
 	"github.com/containerd/containerd/mount"
+	specs "github.com/opencontainers/runtime-spec/specs-go"
 	"github.com/pkg/errors"
 
 	"k8s.io/frakti/pkg/kata/server"
@@ -246,20 +248,28 @@ func (p *Init) resume(ctx context.Context) error {
 }
 
 // exec returns a new exec'd process
-func (p *Init) exec(context context.Context, id string , conf *ExecConfig) (proc.Process, error) {
+func (p *Init) exec(context context.Context, id string , conf *ExecConfig) (Process, error) {
 	var spec specs.Process
 	if err := json.Unmarshal(conf.Spec.Value, &spec); err != nil {
 		return nil, err
 	}
 	spec.Terminal = conf.Terminal
 
+	capabilities := vc.LinuxCapabilities{
+		Bounding:		spec.Capabilities.Bounding,
+		Effective:		spec.Capabilities.Effective,
+		Inheritable:	spec.Capabilities.Inheritable,
+		Permitted:		spec.Capabilities.Permitted,
+		Ambient:		spec.Capabilities.Ambient,
+	}
+
 	cmd := vc.Cmd{
 		Args:				spec.Args,
 		Envs:				[]vc.EnvVar{},
-		User:				spec.User.UID,
-		PrimaryGroup:		spec.User.GID,
+		User:				string(spec.User.UID),
+		PrimaryGroup:		string(spec.User.GID),
 		WorkDir:			spec.Cwd,
-		Capabilities:		*spec.LinuxCapabilities,
+		Capabilities:		capabilities,
 		Interactive:		spec.Terminal,
 		Detach:				!spec.Terminal,
 		NoNewPrivileges:	spec.NoNewPrivileges,
@@ -267,12 +277,12 @@ func (p *Init) exec(context context.Context, id string , conf *ExecConfig) (proc
 
 	_, process, err := p.sandbox.EnterContainer(p.sandbox.ID(), cmd)
 	if err != nil {
-		return errors.Wrapf(err, "cannot enter container %s", containerID)
+		return nil, errors.Wrapf(err, "cannot enter container %s", p.sandbox.ID())
 	}
 
-	stdin, stdout, stderr, err := p.sandbox.IOStream(containerID, process.Token)
+	stdin, stdout, stderr, err := p.sandbox.IOStream(p.sandbox.ID(), process.Token)
 	if err != nil {
-		return errors.Wrapf(err, "cannot enter container %s", containerID)
+		return nil, errors.Wrapf(err, "cannot get %s IOStream", p.sandbox.ID())
 	}
 
 	e := &ExecProcess{
@@ -283,7 +293,7 @@ func (p *Init) exec(context context.Context, id string , conf *ExecConfig) (proc
 		stdin:	stdin,
 		stdout:	stdout,
 		stderr:	stderr,
-		stdio: proc.Stdio{
+		stdio: 	Stdio{
 			Stdin:    conf.Stdin,
 			Stdout:   conf.Stdout,
 			Stderr:   conf.Stderr,

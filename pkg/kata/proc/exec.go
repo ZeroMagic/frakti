@@ -26,6 +26,7 @@ import (
 
 	"github.com/containerd/console"
 	specs "github.com/opencontainers/runtime-spec/specs-go"
+	"github.com/pkg/errors"
 
 	vc "github.com/kata-containers/runtime/virtcontainers"
 )
@@ -99,7 +100,8 @@ func (e *ExecProcess) Wait() {
 }
 
 func (e *ExecProcess) resize(ws console.WinSize) error {
-	return e.parent.sandbox.WinsizeProcess(p.sandbox.ID(), p.id, uint32(ws.Height), uint32(ws.Width))
+	sandbox := e.parent.sandbox
+	return sandbox.WinsizeProcess(sandbox.ID(), e.token, uint32(ws.Height), uint32(ws.Width))
 }
 
 func (e *ExecProcess) delete(ctx context.Context) error {

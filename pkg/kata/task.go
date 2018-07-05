@@ -98,7 +98,7 @@ func (t *Task) Start(ctx context.Context) error {
 	hasCgroup := t.cg != nil
 	t.mu.Unlock()
 
-	t.processList[t.id].Start(ctx)
+	t.processList[t.id].(*proc.Init).Start(ctx)
 
 	if !hasCgroup {
 		cg, err := cgroups.Load(cgroups.V1, cgroups.PidPath(int(t.pid)))
@@ -181,7 +181,7 @@ func (t *Task) Resume(ctx context.Context) error {
 // Exec adds a process into the container
 func (t *Task) Exec(ctx context.Context, id string, opts runtime.ExecOpts) (runtime.Process, error) {
 	p := t.processList[t.id]
-	conf := &ExecConfig{
+	conf := &proc.ExecConfig{
 		ID:       id,
 		Stdin:    opts.IO.Stdin,
 		Stdout:   opts.IO.Stdout,
@@ -193,7 +193,7 @@ func (t *Task) Exec(ctx context.Context, id string, opts runtime.ExecOpts) (runt
 	if err != nil {
 		return nil, errors.Wrap(err, "task Exec error")
 	}
-	t.processList[id] := process
+	t.processList[id] = process
 
 	return &Process{
 		id: id,
@@ -214,7 +214,7 @@ func (t *Task) Checkpoint(ctx context.Context, path string, options *types.Any) 
 // DeleteProcess deletes a specific exec process via its id
 func (t *Task) DeleteProcess(ctx context.Context, id string) (*runtime.Exit, error) {
 	p := t.processList[t.id]
-	err := p.(*proc.ExecProcess).Delete(ctx, id)
+	err := p.(*proc.ExecProcess).Delete(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "task DeleteProcess error")
 	}

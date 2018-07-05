@@ -24,7 +24,7 @@ import (
 )
 
 type execCreatedState struct {
-	p *execProcess
+	p *ExecProcess
 }
 
 func (s *execCreatedState) transition(name string) error {
@@ -76,7 +76,7 @@ func (s *execCreatedState) SetExited(status int) {
 }
 
 type execRunningState struct {
-	p *execProcess
+	p *ExecProcess
 }
 
 func (s *execRunningState) transition(name string) error {
@@ -122,7 +122,7 @@ func (s *execRunningState) SetExited(status int) {
 }
 
 type execStoppedState struct {
-	p *execProcess
+	p *ExecProcess
 }
 
 func (s *execStoppedState) transition(name string) error {

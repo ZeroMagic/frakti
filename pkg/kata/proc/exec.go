@@ -17,6 +17,7 @@ limitations under the License.
 package proc
 
 import (
+	"syscall"
 	"context"
 	"fmt"
 	"io"
@@ -29,7 +30,8 @@ import (
 	vc "github.com/kata-containers/runtime/virtcontainers"
 )
 
-type execProcess struct {
+// ExecProcess represents an exec process inside the vm
+type ExecProcess struct {
 	wg sync.WaitGroup
 
 	State
@@ -53,37 +55,37 @@ type execProcess struct {
 	sandbox vc.VCSandbox
 }
 
-func (e *execProcess) ID() string {
+func (e *ExecProcess) ID() string {
 	return e.id
 }
 
-func (e *execProcess) Pid() int {
+func (e *ExecProcess) Pid() int {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	return e.pid
 }
 
-func (e *execProcess) ExitStatus() int {
+func (e *ExecProcess) ExitStatus() int {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	return e.exitStatus
 }
 
-func (e *execProcess) ExitedAt() time.Time {
+func (e *ExecProcess) ExitedAt() time.Time {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	return e.exited
 }
 
-func (e *execProcess) Stdin() io.Closer {
+func (e *ExecProcess) Stdin() io.Closer {
 	return e.stdin
 }
 
-func (e *execProcess) Stdio() Stdio {
+func (e *ExecProcess) Stdio() Stdio {
 	return e.stdio
 }
 
-func (e *execProcess) Status(ctx context.Context) (string, error) {
+func (e *ExecProcess) Status(ctx context.Context) (string, error) {
 	s, err := e.parent.Status(ctx)
 	if err != nil {
 		return "", err
@@ -92,23 +94,28 @@ func (e *execProcess) Status(ctx context.Context) (string, error) {
 	return s, nil
 }
 
-func (e *execProcess) Wait() {
+func (e *ExecProcess) Wait() {
 	<-e.waitBlock
 }
 
-func (e *execProcess) resize(ws console.WinSize) error {
+func (e *ExecProcess) resize(ws console.WinSize) error {
 	return e.parent.sandbox.WinsizeProcess(p.sandbox.ID(), p.id, uint32(ws.Height), uint32(ws.Width))
 }
 
-func (e *execProcess) delete(ctx context.Context) error {
-	return fmt.Errorf("exec process delete is not implemented")
+func (e *ExecProcess) delete(ctx context.Context) error {
+	sandbox := e.parent.sandbox
+	err := sandbox.SignalProcess(sandbox.ID(), e.token, syscall.SIGKILL, false)
+	if err != nil {
+		return errors.Wrap(err, "failed to delete exec process")
+	}
+	return nil
 }
 
-func (e *execProcess) kill(ctx context.Context, sig uint32, _ bool) error {
+func (e *ExecProcess) kill(ctx context.Context, sig uint32, _ bool) error {
 	return fmt.Errorf("exec process kill is not implemented")
 }
 
-func (e *execProcess) setExited(status int) {
+func (e *ExecProcess) setExited(status int) {
 	e.exitStatus = status
 	e.exited = time.Now()
 	close(e.waitBlock)

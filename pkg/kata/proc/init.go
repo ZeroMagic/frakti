@@ -275,7 +275,7 @@ func (p *Init) exec(context context.Context, id string , conf *ExecConfig) (proc
 		return errors.Wrapf(err, "cannot enter container %s", containerID)
 	}
 
-	e := &execProcess{
+	e := &ExecProcess{
 		id:     conf.ID,
 		pid:	process.Pid,
 		token:	process.Token,

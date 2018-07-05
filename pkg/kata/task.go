@@ -214,16 +214,16 @@ func (t *Task) Checkpoint(ctx context.Context, path string, options *types.Any) 
 // DeleteProcess deletes a specific exec process via its id
 func (t *Task) DeleteProcess(ctx context.Context, id string) (*runtime.Exit, error) {
 	p := t.processList[t.id]
-	process, err := p.(*proc.Init).Exec(ctx, id, conf)
+	err := p.(*proc.ExecProcess).Delete(ctx, id)
 	if err != nil {
-		return nil, errors.Wrap(err, "task Exec error")
+		return nil, errors.Wrap(err, "task DeleteProcess error")
 	}
-	t.processList[id] := process
 
-	return &Process{
-		id: id,
-		t:  t,
-	}, nilreturn nil, fmt.Errorf("task delete process not implemented")
+	return &runtime.Exit{
+		Pid:       uint32(p.Pid()),
+		Status:    uint32(p.ExitStatus()),
+		Timestamp: p.ExitedAt(),
+	}, nil
 }
 
 // Update sets the provided resources to a running task

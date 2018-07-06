@@ -30,6 +30,7 @@ import (
 	"github.com/gogo/protobuf/types"
 	vc "github.com/kata-containers/runtime/virtcontainers"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 
 	"k8s.io/frakti/pkg/kata/proc"
 )
@@ -66,6 +67,8 @@ func newTask(ctx context.Context, id, namespace string, pid uint32, monitor runt
 
 	processList := make(map[string]proc.Process)
 	processList[id] = init
+
+	logrus.FieldLogger(logrus.New()).Info("new Task Successfully")
 
 	return &Task{
 		id:          id,

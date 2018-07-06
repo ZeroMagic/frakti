@@ -37,6 +37,8 @@ import (
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 	runtimespec "github.com/opencontainers/runtime-spec/specs-go"
 	errors "github.com/pkg/errors"
+
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -170,6 +172,8 @@ func (r *Runtime) Create(ctx context.Context, id string, opts runtime.CreateOpts
 			return nil, err
 		}
 	}
+
+	logrus.FieldLogger(logrus.New()).Info("Runtime create a task Successfully")
 
 	// 8. publish create event
 	r.events.Publish(ctx, runtime.TaskCreateEventTopic, &eventstypes.TaskCreate{

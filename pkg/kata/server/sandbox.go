@@ -234,14 +234,14 @@ func CreateSandbox(ctx context.Context, id string) (vc.VCSandbox, error) {
 		SharePidNs: false,
 	}
 
-	sandbox, err := vc.CreateSandbox(sandboxConfig)
+	sandbox, err := vc.RunSandbox(sandboxConfig)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Could not create sandbox")
 	}
 
 	logrus.FieldLogger(logrus.New()).WithFields(logrus.Fields{
 		"sandbox": sandbox,
-	}).Info("Sandbox Create Successfully")
+	}).Info("Run Sandbox Successfully")
 
 	return sandbox, err
 }

@@ -127,6 +127,24 @@ func parse(sock string) (string, *url.URL, error) {
 	return grpcAddr, addr, nil
 }
 
+// yamuxWriter is a type responsible for logging yamux messages to the agent
+// log.
+type yamuxWriter struct {
+}
+
+// Write implements the Writer interface for the yamuxWriter.
+func (yw yamuxWriter) Write(bytes []byte) (int, error) {
+	message := string(bytes)
+
+	l := len(message)
+
+	// yamux messages are all warnings and errors
+	logrus.FieldLogger(logrus.New()).WithField("component", "yamux").Info(message)
+
+	return l, nil
+}
+
+
 func agentDialer(addr *url.URL, enableYamux bool) dialer {
 	var d dialer
 	switch addr.Scheme {
@@ -154,8 +172,12 @@ func agentDialer(addr *url.URL, enableYamux bool) dialer {
 			}
 		}()
 
+		config := yamux.DefaultConfig()
+
+		config.LogOutput = yamuxWriter{}
+
 		var session *yamux.Session
-		session, err = yamux.Client(conn, nil)
+		session, err = yamux.Client(conn, config)
 		if err != nil {
 			return nil, err
 		}
@@ -172,7 +194,15 @@ func agentDialer(addr *url.URL, enableYamux bool) dialer {
 
 // unix addr are parsed by grpc
 func unixDialer(sock string, timeout time.Duration) (net.Conn, error) {
-	return net.DialTimeout("unix", sock, timeout)
+	conn, err := net.DialTimeout("unix", sock, timeout)
+	if err != nil {
+		logrus.FieldLogger(logrus.New()).WithFields(logrus.Fields{
+			"conn": conn,
+			"err":	err,
+		}).Info("unix Dialer")
+	}
+
+	return conn, nil
 }
 
 func parseGrpcVsockAddr(sock string) (uint32, uint32, error) {

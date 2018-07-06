@@ -26,6 +26,8 @@ import (
 	vc "github.com/kata-containers/runtime/virtcontainers"
 	"github.com/kata-containers/runtime/virtcontainers/pkg/annotations"
 	errors "github.com/pkg/errors"
+
+	"github.com/sirupsen/logrus"
 )
 
 // CreateSandbox creates a kata-runtime sandbox
@@ -232,10 +234,14 @@ func CreateSandbox(ctx context.Context, id string) (vc.VCSandbox, error) {
 		SharePidNs: false,
 	}
 
-	sandbox, err := vc.RunSandbox(sandboxConfig)
+	sandbox, err := vc.CreateSandbox(sandboxConfig)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Could not create sandbox")
 	}
+
+	logrus.FieldLogger(logrus.New()).WithFields(logrus.Fields{
+		"sandbox": sandbox,
+	}).Info("Sandbox Create Successfully")
 
 	return sandbox, err
 }

@@ -202,7 +202,7 @@ func unixDialer(sock string, timeout time.Duration) (net.Conn, error) {
 		}).Info("unix Dialer")
 	}
 
-	return conn, nil
+	return conn, err
 }
 
 func parseGrpcVsockAddr(sock string) (uint32, uint32, error) {

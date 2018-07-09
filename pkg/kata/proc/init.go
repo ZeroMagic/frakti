@@ -185,12 +185,15 @@ func (p *Init) Status(ctx context.Context) (string, error) {
 
 // Wait for the process to exit
 func (p *Init) Wait() {
-	sandbox := p.sandbox
-	exitStatus, err := sandbox.WaitProcess(sandbox.ID(), sandbox.ID())
+	process, err := os.FindProcess(p.pid)
 	if err != nil {
-		errors.Wrap(err, "init wait failed")
+		return 
 	}
-	p.exitStatus = int(exitStatus)
+
+	_, err = process.Wait()
+	if err != nil {
+		return
+	}
 	<-p.waitBlock
 }
 

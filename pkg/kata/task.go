@@ -326,6 +326,7 @@ func (t *Task) Wait(ctx context.Context) (*runtime.Exit, error) {
 	logrus.FieldLogger(logrus.New()).Info("task Wait")
 	p := t.processList[t.id]
 	p.Wait()
+	p.SetExited(0)
 	return &runtime.Exit{
 		Pid:       t.pid,
 		Status:    uint32(p.ExitStatus()),

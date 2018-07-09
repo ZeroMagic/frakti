@@ -28,6 +28,7 @@ import (
 	identifiers "github.com/containerd/containerd/identifiers"
 	log "github.com/containerd/containerd/log"
 	"github.com/containerd/containerd/metadata"
+	"github.com/containerd/containerd/mount"
 	"github.com/containerd/containerd/namespaces"
 	"github.com/containerd/containerd/platforms"
 	"github.com/containerd/containerd/plugin"
@@ -206,7 +207,45 @@ func (r *Runtime) Tasks(ctx context.Context) ([]runtime.Task, error) {
 // Delete removes the task in the runtime.
 func (r *Runtime) Delete(ctx context.Context, t runtime.Task) (*runtime.Exit, error) {
 
-	// TODO(ZeroMagic): delete a task
+	// monitor will be handled
 
-	return nil, fmt.Errorf("not implemented")
+	taskID := t.ID()
+	namespace, err := namespaces.NamespaceRequired(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	bundle := loadBundle(
+		taskID,
+		filepath.Join(r.state, namespace, taskID),
+		filepath.Join(r.root, namespace, taskID),
+	)
+
+	// unmount
+	if err := mount.Unmount(filepath.Join(bundle.path, "rootfs"), 0); err != nil {
+		log.G(ctx).WithError(err).WithFields(logrus.Fields{
+			"path": bundle.path,
+			"id":   taskID,
+		}).Warnf("unmount task rootfs")
+	}
+
+	// delete process
+	p := t.(*Task).GetProcess(taskID)
+	if err := p.Delete(ctx); err != nil {
+		return nil, err
+	}
+
+	// remove the task
+	r.tasks.Delete(ctx, taskID)
+
+	// delete the bundle
+	if err := bundle.Delete(); err != nil {
+		log.G(ctx).WithError(err).Error("failed to delete bundle")
+	}
+
+	return &runtime.Exit{
+		Pid:        uint32(p.Pid()),
+		Status: 	uint32(p.ExitStatus()),
+		Timestamp:	p.ExitedAt(),
+	}, nil
 }

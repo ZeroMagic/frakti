@@ -19,7 +19,6 @@ package proc
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -282,7 +281,11 @@ func (p *Init) start(ctx context.Context) error {
 }
 
 func (p *Init) delete(ctx context.Context) error {
-	return fmt.Errorf("init process delete is not implemented")
+	err := p.kill(ctx, uint32(syscall.SIGKILL), true)
+	if err != nil {
+		return errors.Wrap(err, "failed to delete container")
+	}
+	return nil
 }
 
 func (p *Init) kill(ctx context.Context, signal uint32, all bool) error {

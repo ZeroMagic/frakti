@@ -333,3 +333,8 @@ func (t *Task) Wait(ctx context.Context) (*runtime.Exit, error) {
 		Timestamp: time.Time{},
 	}, nil
 }
+
+// GetProcess gets the specify process
+func (t *Task) GetProcess(id string) proc.Process {
+	return t.processList[id]
+}

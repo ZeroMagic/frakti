@@ -27,6 +27,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/containerd/fifo"
 	"github.com/containerd/console"
 	"github.com/containerd/containerd/log"
 	"github.com/containerd/containerd/mount"
@@ -36,6 +37,8 @@ import (
 	"k8s.io/frakti/pkg/kata/server"
 
 	vc "github.com/kata-containers/runtime/virtcontainers"
+
+	"github.com/sirupsen/logrus"
 )
 
 // InitPidFile name of the file that contains the init pid
@@ -131,6 +134,83 @@ func NewInit(ctx context.Context, path, workDir, namespace string, pid int, conf
 
 	// TODO(ZeroMagic): create with checkpoint
 
+	var (
+		localStdout, localStderr io.WriteCloser
+		localStdin           io.ReadCloser
+		wg               sync.WaitGroup
+	)
+
+	if stdin != nil {
+		localStdin, err = fifo.OpenFifo(ctx, config.Stdin, syscall.O_RDONLY, 0)
+		if err != nil {
+			logrus.FieldLogger(logrus.New()).Errorf("open local stdin: %s", err)
+		}
+		wg.Add(1)
+	}
+
+	if stdout != nil {
+		localStdout, err = fifo.OpenFifo(ctx, config.Stdout, syscall.O_WRONLY, 0)
+		if err != nil {
+			logrus.FieldLogger(logrus.New()).Errorf("open local stdout: %s", err)
+		}
+		wg.Add(1)
+	}
+
+	if stderr != nil {
+		localStderr, err = fifo.OpenFifo(ctx, config.Stderr, syscall.O_WRONLY, 0)
+		if err != nil {
+			logrus.FieldLogger(logrus.New()).Errorf("open local stderr: %s", err)
+		}
+		wg.Add(1)
+	}
+
+	// Connect stdin of container.
+	go func() {
+		if stdin == nil {
+			return
+		}
+		logrus.FieldLogger(logrus.New()).Info("stdin: begin")
+		_, err = io.Copy(stdin, localStdin)
+		if err == io.ErrClosedPipe {
+			err = nil
+		}
+		if err != nil {
+			logrus.FieldLogger(logrus.New()).Errorf("stdin copy: %s", err)
+		}
+		localStdin.Close()
+		logrus.FieldLogger(logrus.New()).Info("stdin: end")
+		wg.Done()
+	}()
+
+	// stdout/stderr
+	attachStream := func(name string, stream io.Writer, streamPipe io.Reader) {
+		if stream == nil {
+			return
+		}
+
+		logrus.FieldLogger(logrus.New()).Infof("%s: begin", name)
+		_, err := io.Copy(stream, streamPipe)
+		if err == io.ErrClosedPipe {
+			err = nil
+		}
+		if err != nil {
+			logrus.FieldLogger(logrus.New()).Errorf("%s copy: %v", name, err)
+		}
+		// Make sure stdin gets closed
+		if stdin != nil {
+			localStdin.Close()
+		}
+		if closer, ok := stream.(io.Closer); ok {
+			closer.Close()
+		}
+		logrus.FieldLogger(logrus.New()).Infof("%s: end", name)
+		wg.Done()
+	}
+
+	go attachStream("stdout", localStdout, stdout)
+	go attachStream("stdout", localStderr, stdout)
+	wg.Wait()
+
 	success = true
 	return p, nil
 }
@@ -185,15 +265,6 @@ func (p *Init) Status(ctx context.Context) (string, error) {
 
 // Wait for the process to exit
 func (p *Init) Wait() {
-	process, err := os.FindProcess(p.pid)
-	if err != nil {
-		return 
-	}
-
-	_, err = process.Wait()
-	if err != nil {
-		return
-	}
 	<-p.waitBlock
 }
 

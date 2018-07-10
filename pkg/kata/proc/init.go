@@ -177,7 +177,7 @@ func NewInit(ctx context.Context, path, workDir, namespace string, pid int, conf
 		if err != nil {
 			logrus.FieldLogger(logrus.New()).Errorf("stdin copy: %s", err)
 		}
-		localStdin.Close()
+		
 		logrus.FieldLogger(logrus.New()).Info("stdin: end")
 		wg.Done()
 	}()
@@ -196,10 +196,11 @@ func NewInit(ctx context.Context, path, workDir, namespace string, pid int, conf
 		if err != nil {
 			logrus.FieldLogger(logrus.New()).Errorf("%s copy: %v", name, err)
 		}
-		// Make sure stdin gets closed
-		if stdin != nil {
+		
+		if localStdin != nil {
 			localStdin.Close()
 		}
+
 		if closer, ok := stream.(io.Closer); ok {
 			closer.Close()
 		}
@@ -209,6 +210,7 @@ func NewInit(ctx context.Context, path, workDir, namespace string, pid int, conf
 
 	go attachStream("stdout", localStdout, stdout)
 	go attachStream("stderr", localStderr, stderr)
+
 	wg.Wait()
 
 	success = true

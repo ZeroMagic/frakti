@@ -133,6 +133,7 @@ func NewInit(ctx context.Context, path, workDir, namespace string, pid int, conf
 
 	// TODO(ZeroMagic): create with checkpoint
 
+	// create local stdio
 	var (
 		localStdout, localStderr io.WriteCloser
 		localStdin           io.ReadCloser
@@ -207,7 +208,7 @@ func NewInit(ctx context.Context, path, workDir, namespace string, pid int, conf
 	}
 
 	go attachStream("stdout", localStdout, stdout)
-	go attachStream("stdout", localStderr, stdout)
+	go attachStream("stderr", localStderr, stderr)
 	wg.Wait()
 
 	success = true

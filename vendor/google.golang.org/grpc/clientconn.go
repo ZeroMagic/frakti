@@ -484,14 +484,14 @@ func DialContext(ctx context.Context, target string, opts ...DialOption) (conn *
 	if cc.dopts.resolverBuilder == nil {	
 		// Only try to parse target when resolver builder is not already set.
 		cc.parsedTarget = parseTarget(cc.target)
-		logrus.FieldLogger(logrus.New()).WithFields(logrus.Fields{
-			"cc.parsedTarget":	cc.parsedTarget,
-		}).Infof("[/vendor/google.golang.org/grpc/clientconn.go-DialContext()]", time.Now())
+		// logrus.FieldLogger(logrus.New()).WithFields(logrus.Fields{
+		// 	"cc.parsedTarget":	cc.parsedTarget,
+		// }).Infof("[/vendor/google.golang.org/grpc/clientconn.go-DialContext()]", time.Now())
 		grpclog.Infof("parsed scheme: %q", cc.parsedTarget.Scheme)
 		cc.dopts.resolverBuilder = resolver.Get(cc.parsedTarget.Scheme)
-		logrus.FieldLogger(logrus.New()).WithFields(logrus.Fields{
-			"cc.dopts.resolverBuilder":	cc.dopts.resolverBuilder,
-		}).Infof("[/vendor/google.golang.org/grpc/clientconn.go-DialContext()]", time.Now())	
+		// logrus.FieldLogger(logrus.New()).WithFields(logrus.Fields{
+		// 	"cc.dopts.resolverBuilder":	cc.dopts.resolverBuilder,
+		// }).Infof("[/vendor/google.golang.org/grpc/clientconn.go-DialContext()]", time.Now())	
 		if cc.dopts.resolverBuilder == nil {
 			// If resolver builder is still nil, the parse target's scheme is
 			// not registered. Fallback to default resolver and set Endpoint to
@@ -555,34 +555,34 @@ func DialContext(ctx context.Context, target string, opts ...DialOption) (conn *
 	// resolverWrapper.
 	cc.resolverWrapper.start()
 
-	logrus.FieldLogger(logrus.New()).WithFields(logrus.Fields{
-		"clientConn":	cc,
-	}).Infof("[/vendor/google.golang.org/grpc/clientconn.go-DialContext()]", time.Now())
+	// logrus.FieldLogger(logrus.New()).WithFields(logrus.Fields{
+	// 	"clientConn":	cc,
+	// }).Infof("[/vendor/google.golang.org/grpc/clientconn.go-DialContext()]", time.Now())
 	// A blocking dial blocks until the clientConn is ready.
 	if cc.dopts.block {
 		for {
 			s := cc.GetState()
-			logrus.FieldLogger(logrus.New()).WithFields(logrus.Fields{
-				"clientConn state":	s,
-				"connectivity.Ready":    connectivity.Ready,
-			}).Infof("[/vendor/google.golang.org/grpc/clientconn.go-DialContext()]", time.Now())
+			// logrus.FieldLogger(logrus.New()).WithFields(logrus.Fields{
+			// 	"clientConn state":	s,
+			// 	"connectivity.Ready":    connectivity.Ready,
+			// }).Infof("[/vendor/google.golang.org/grpc/clientconn.go-DialContext()]", time.Now())
 			if s == connectivity.Ready {
 				break
 			}
 			if !cc.WaitForStateChange(ctx, s) {
 				// ctx got timeout or canceled.
-				logrus.FieldLogger(logrus.New()).WithFields(logrus.Fields{
-					"ctx.Err()":	ctx.Err(),
-					"clientConn state":	s,
-				}).Infof("[/vendor/google.golang.org/grpc/clientconn.go-DialContext()]", time.Now())
+				// logrus.FieldLogger(logrus.New()).WithFields(logrus.Fields{
+				// 	"ctx.Err()":	ctx.Err(),
+				// 	"clientConn state":	s,
+				// }).Infof("[/vendor/google.golang.org/grpc/clientconn.go-DialContext()]", time.Now())
 				return nil, ctx.Err()
 			}
 		}
 	}
-	logrus.FieldLogger(logrus.New()).WithFields(logrus.Fields{
-		"clientConn":	cc,
-		"clientConn state":	cc.GetState(),
-	}).Infof("[/vendor/google.golang.org/grpc/clientconn.go-DialContext()]", time.Now())
+	// logrus.FieldLogger(logrus.New()).WithFields(logrus.Fields{
+	// 	"clientConn":	cc,
+	// 	"clientConn state":	cc.GetState(),
+	// }).Infof("[/vendor/google.golang.org/grpc/clientconn.go-DialContext()]", time.Now())
 	return cc, nil
 }
 

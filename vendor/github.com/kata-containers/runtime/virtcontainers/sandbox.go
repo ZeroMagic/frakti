@@ -729,9 +729,9 @@ func newSandbox(sandboxConfig SandboxConfig) (*Sandbox, error) {
 
 	network := newNetwork(sandboxConfig.NetworkModel)
 
-	logrus.FieldLogger(logrus.New()).WithFields(logrus.Fields{
-		"sandboxConfig":    sandboxConfig,
-	}).Infof("[/virtcontianers.go-newSandbox()]")
+	// logrus.FieldLogger(logrus.New()).WithFields(logrus.Fields{
+	// 	"sandboxConfig":    sandboxConfig,
+	// }).Infof("[/virtcontianers.go-newSandbox()]")
 
 	s := &Sandbox{
 		id:              sandboxConfig.ID,
@@ -751,9 +751,9 @@ func newSandbox(sandboxConfig SandboxConfig) (*Sandbox, error) {
 		sharePidNs:      sandboxConfig.SharePidNs,
 	}
 
-	logrus.FieldLogger(logrus.New()).WithFields(logrus.Fields{
-		"sandbox":    s,
-	}).Infof("[/virtcontianers.go-newSandbox()]")
+	// logrus.FieldLogger(logrus.New()).WithFields(logrus.Fields{
+	// 	"sandbox":    s,
+	// }).Infof("[/virtcontianers.go-newSandbox()]")
 
 	if err = globalSandboxList.addSandbox(s); err != nil {
 		return nil, err
@@ -928,10 +928,10 @@ func (s *Sandbox) createNetwork() error {
 	}
 	s.networkNS = networkNS
 
-	logrus.FieldLogger(logrus.New()).WithFields(logrus.Fields{
-		"netNsPath": netNsPath,
-		"networkNS": networkNS,
-	}).Infof("[/virtcontainers/sandbox.go-createNetwork()]")
+	// logrus.FieldLogger(logrus.New()).WithFields(logrus.Fields{
+	// 	"netNsPath": netNsPath,
+	// 	"networkNS": networkNS,
+	// }).Infof("[/virtcontainers/sandbox.go-createNetwork()]")
 
 	// Store the network
 	return s.storage.storeSandboxNetwork(s.id, networkNS)
@@ -1140,9 +1140,9 @@ func (s *Sandbox) StatsContainer(containerID string) (ContainerStats, error) {
 // containers in the guest and starts one shim per container.
 func (s *Sandbox) createContainers() error {
 	for _, contConfig := range s.config.Containers {
-		logrus.FieldLogger(logrus.New()).WithFields(logrus.Fields{
-			"containerConfig": contConfig,
-		}).Infof("[/virtcontainers/sandbox.go-createContainers()]")
+		// logrus.FieldLogger(logrus.New()).WithFields(logrus.Fields{
+		// 	"containerConfig": contConfig,
+		// }).Infof("[/virtcontainers/sandbox.go-createContainers()]")
 		newContainer, err := createContainer(s, contConfig)
 		if err != nil {
 			return err

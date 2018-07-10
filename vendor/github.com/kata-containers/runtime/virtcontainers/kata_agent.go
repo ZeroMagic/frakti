@@ -486,15 +486,15 @@ func (k *kataAgent) startSandbox(sandbox *Sandbox) error {
 	if err != nil {
 		return err
 	}
-	logrus.FieldLogger(logrus.New()).WithFields(logrus.Fields{
-		"interfaces": interfaces,
-	}).Infof("[/virtcontainers/kata_agent.go-startSandbox()]")
+	// logrus.FieldLogger(logrus.New()).WithFields(logrus.Fields{
+	// 	"interfaces": interfaces,
+	// }).Infof("[/virtcontainers/kata_agent.go-startSandbox()]")
 	for _, ifc := range interfaces {
 		// send update interface request
 		ifcReq := &grpc.UpdateInterfaceRequest{
 			Interface: ifc,
 		}
-		logrus.FieldLogger(logrus.New()).Infof("[/virtcontainers/kata_agent.go-startSandbox()-interfaces]")
+		// logrus.FieldLogger(logrus.New()).Infof("[/virtcontainers/kata_agent.go-startSandbox()-interfaces]")
 		resultingInterface, err := k.sendReq(ifcReq)
 		if err != nil {
 			k.Logger().WithFields(logrus.Fields{
@@ -512,7 +512,7 @@ func (k *kataAgent) startSandbox(sandbox *Sandbox) error {
 			},
 		}
 
-		logrus.FieldLogger(logrus.New()).Infof("[/virtcontainers/kata_agent.go-startSandbox()-route]")
+		// logrus.FieldLogger(logrus.New()).Infof("[/virtcontainers/kata_agent.go-startSandbox()-route]")
 		resultingRoutes, err := k.sendReq(routesReq)
 		if err != nil {
 			k.Logger().WithFields(logrus.Fields{
@@ -561,14 +561,14 @@ func (k *kataAgent) startSandbox(sandbox *Sandbox) error {
 		SandboxPidns: sandbox.sharePidNs,
 	}
 
-	logrus.FieldLogger(logrus.New()).WithFields(logrus.Fields{
-		"Hostname":   hostname,
-		"Driver":     kata9pDevType,
-		"Source":     mountGuest9pTag,
-		"MountPoint": kataGuestSharedDir,
-		"Fstype":     type9pFs,
-		"Options":    sharedDir9pOptions,
-	}).Infof("[/virtcontainers/kata_agent.go-startSandbox()-grpc.CreateSandboxRequest]")
+	// logrus.FieldLogger(logrus.New()).WithFields(logrus.Fields{
+	// 	"Hostname":   hostname,
+	// 	"Driver":     kata9pDevType,
+	// 	"Source":     mountGuest9pTag,
+	// 	"MountPoint": kataGuestSharedDir,
+	// 	"Fstype":     type9pFs,
+	// 	"Options":    sharedDir9pOptions,
+	// }).Infof("[/virtcontainers/kata_agent.go-startSandbox()-grpc.CreateSandboxRequest]")
 	_, err = k.sendReq(req)
 	return err
 }

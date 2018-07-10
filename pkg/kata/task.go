@@ -51,16 +51,16 @@ type Task struct {
 }
 
 func newTask(ctx context.Context, id, namespace string, pid uint32, monitor runtime.TaskMonitor, events *exchange.Exchange, opts runtime.CreateOpts, bundle *bundle) (*Task, error) {
-	var (
-		err error
-		cg  cgroups.Cgroup
-	)
-	if pid > 0 {
-		cg, err = cgroups.Load(cgroups.V1, cgroups.PidPath(int(pid)))
-		if err != nil && err != cgroups.ErrCgroupDeleted {
-			return nil, err
-		}
-	}
+	// var (
+	// 	err error
+	// 	cg  cgroups.Cgroup
+	// )
+	// if pid > 0 {
+	// 	cg, err = cgroups.Load(cgroups.V1, cgroups.PidPath(int(pid)))
+	// 	if err != nil && err != cgroups.ErrCgroupDeleted {
+	// 		return nil, err
+	// 	}
+	// }
 	
 	config := &proc.InitConfig{
 		ID:       id,
@@ -80,13 +80,13 @@ func newTask(ctx context.Context, id, namespace string, pid uint32, monitor runt
 	processList[id] = init
 
 	logrus.FieldLogger(logrus.New()).Info("new Task Successfully")
-	logrus.FieldLogger(logrus.New()).Infof("cgroupsssssss", cg)
+	//logrus.FieldLogger(logrus.New()).Infof("cgroupsssssss", cg)
 
 	return &Task{
 		id:          id,
 		pid:         pid,
 		namespace:   namespace,
-		cg:			 cg,
+		//cg:			 cg,
 		monitor:     monitor,
 		events:      events,
 		processList: processList,
@@ -113,24 +113,26 @@ func (t *Task) Info() runtime.TaskInfo {
 func (t *Task) Start(ctx context.Context) error {
 	logrus.FieldLogger(logrus.New()).Info("task Start")
 
-	t.mu.Lock()
-	hasCgroup := t.cg != nil
-	t.mu.Unlock()
+	// t.mu.Lock()
+	// hasCgroup := t.cg != nil
+	// t.mu.Unlock()
+
+	
+
+	// if !hasCgroup {
+	// 	cg, err := cgroups.Load(cgroups.V1, cgroups.PidPath(int(t.pid)))
+	// 	if err != nil {
+	// 		return errors.Wrap(err, "task start error")
+	// 	}
+	// 	t.mu.Lock()
+	// 	t.cg = cg
+	// 	t.mu.Unlock()
+	// 	if err := t.monitor.Monitor(t); err != nil {
+	// 		return err
+	// 	}
+	// }
 
 	t.processList[t.id].(*proc.Init).Start(ctx)
-
-	if !hasCgroup {
-		cg, err := cgroups.Load(cgroups.V1, cgroups.PidPath(int(t.pid)))
-		if err != nil {
-			return errors.Wrap(err, "task start error")
-		}
-		t.mu.Lock()
-		t.cg = cg
-		t.mu.Unlock()
-		if err := t.monitor.Monitor(t); err != nil {
-			return err
-		}
-	}
 
 	t.events.Publish(ctx, runtime.TaskStartEventTopic, &eventstypes.TaskStart{
 		ContainerID: t.id,

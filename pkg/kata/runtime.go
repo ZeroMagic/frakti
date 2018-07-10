@@ -165,14 +165,14 @@ func (r *Runtime) Create(ctx context.Context, id string, opts runtime.CreateOpts
 	}
 	// 7. after the task is created, add it to the monitor if it has a cgroup
 	// this can be different on a checkpoint/restore
-	if t.cg != nil {
-		if err = r.monitor.Monitor(t); err != nil {
-			if _, err := r.Delete(ctx, t); err != nil {
-				log.G(ctx).WithError(err).Error("deleting task after failed monitor")
-			}
-			return nil, err
-		}
-	}
+	// if t.cg != nil {
+	// 	if err = r.monitor.Monitor(t); err != nil {
+	// 		if _, err := r.Delete(ctx, t); err != nil {
+	// 			log.G(ctx).WithError(err).Error("deleting task after failed monitor")
+	// 		}
+	// 		return nil, err
+	// 	}
+	// }
 
 	logrus.FieldLogger(logrus.New()).Info("Runtime create a task Successfully")
 

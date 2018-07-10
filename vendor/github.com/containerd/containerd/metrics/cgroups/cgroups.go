@@ -24,7 +24,7 @@ import (
 	"github.com/containerd/cgroups"
 	eventstypes "github.com/containerd/containerd/api/events"
 	"github.com/containerd/containerd/events"
-	"github.com/containerd/containerd/linux"
+	
 	"github.com/containerd/containerd/log"
 	"github.com/containerd/containerd/namespaces"
 	"github.com/containerd/containerd/platforms"
@@ -32,6 +32,8 @@ import (
 	"github.com/containerd/containerd/runtime"
 	metrics "github.com/docker/go-metrics"
 	"github.com/sirupsen/logrus"
+
+	"k8s.io/frakti/pkg/kata"
 )
 
 // Config for the cgroups monitor
@@ -81,7 +83,7 @@ type cgroupsMonitor struct {
 
 func (m *cgroupsMonitor) Monitor(c runtime.Task) error {
 	info := c.Info()
-	t := c.(*linux.Task)
+	t := c.(*kata.Task)
 	cg, err := t.Cgroup()
 	if err != nil {
 		return err
@@ -99,7 +101,7 @@ func (m *cgroupsMonitor) Monitor(c runtime.Task) error {
 
 func (m *cgroupsMonitor) Stop(c runtime.Task) error {
 	info := c.Info()
-	t := c.(*linux.Task)
+	t := c.(*kata.Task)
 
 	cgroup, err := t.Cgroup()
 	if err != nil {

@@ -109,7 +109,7 @@ func (t *Task) Start(ctx context.Context) error {
 	if !hasCgroup {
 		cg, err := cgroups.Load(cgroups.V1, cgroups.PidPath(int(t.pid)))
 		if err != nil {
-			return err
+			return errors.Wrap(err, "task start error")
 		}
 		t.mu.Lock()
 		t.cg = cg
@@ -337,4 +337,15 @@ func (t *Task) Wait(ctx context.Context) (*runtime.Exit, error) {
 // GetProcess gets the specify process
 func (t *Task) GetProcess(id string) proc.Process {
 	return t.processList[id]
+}
+
+// Cgroup returns the underlying cgroup for a linux task
+func (t *Task) Cgroup() (cgroups.Cgroup, error) {
+	logrus.FieldLogger(logrus.New()).Infof("task %v Cgroup", t.id)
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	if t.cg == nil {
+		return nil, errors.New("cgroup does not exist")
+	}
+	return t.cg, nil
 }

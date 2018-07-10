@@ -196,10 +196,6 @@ func NewInit(ctx context.Context, path, workDir, namespace string, pid int, conf
 		if err != nil {
 			logrus.FieldLogger(logrus.New()).Errorf("%s copy: %v", name, err)
 		}
-		
-		if localStdin != nil {
-			localStdin.Close()
-		}
 
 		if closer, ok := stream.(io.Closer); ok {
 			closer.Close()
@@ -284,6 +280,7 @@ func (p *Init) start(ctx context.Context) error {
 }
 
 func (p *Init) delete(ctx context.Context) error {
+	p.stdin.Close()
 	err := p.kill(ctx, uint32(syscall.SIGKILL), true)
 	if err != nil {
 		return errors.Wrap(err, "failed to delete container")

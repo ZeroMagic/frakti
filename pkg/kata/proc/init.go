@@ -135,7 +135,7 @@ func NewInit(ctx context.Context, path, workDir, namespace string, pid int, conf
 
 	// create local stdio
 	var (
-		localStdout, localStderr io.WriteCloser
+		localStdout io.WriteCloser//, localStderr io.WriteCloser
 		localStdin           io.ReadCloser
 		wg               sync.WaitGroup
 	)
@@ -156,13 +156,13 @@ func NewInit(ctx context.Context, path, workDir, namespace string, pid int, conf
 		wg.Add(1)
 	}
 
-	if stderr != nil {
-		localStderr, err = fifo.OpenFifo(ctx, config.Stderr, syscall.O_WRONLY, 0)
-		if err != nil {
-			logrus.FieldLogger(logrus.New()).Errorf("open local stderr: %s", err)
-		}
-		wg.Add(1)
-	}
+	// if stderr != nil {
+	// 	localStderr, err = fifo.OpenFifo(ctx, config.Stderr, syscall.O_WRONLY, 0)
+	// 	if err != nil {
+	// 		logrus.FieldLogger(logrus.New()).Errorf("open local stderr: %s", err)
+	// 	}
+	// 	wg.Add(1)
+	// }
 
 	// Connect stdin of container.
 	go func() {
@@ -209,7 +209,7 @@ func NewInit(ctx context.Context, path, workDir, namespace string, pid int, conf
 	}
 
 	go attachStream("stdout", localStdout, stdout)
-	go attachStream("stderr", localStderr, stderr)
+	// go attachStream("stderr", localStderr, stderr)
 
 	wg.Wait()
 

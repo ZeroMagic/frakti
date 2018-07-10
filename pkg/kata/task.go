@@ -51,6 +51,17 @@ type Task struct {
 }
 
 func newTask(ctx context.Context, id, namespace string, pid uint32, monitor runtime.TaskMonitor, events *exchange.Exchange, opts runtime.CreateOpts, bundle *bundle) (*Task, error) {
+	var (
+		err error
+		cg  cgroups.Cgroup
+	)
+	if pid > 0 {
+		cg, err = cgroups.Load(cgroups.V1, cgroups.PidPath(int(pid)))
+		if err != nil && err != cgroups.ErrCgroupDeleted {
+			return nil, err
+		}
+	}
+	
 	config := &proc.InitConfig{
 		ID:       id,
 		Rootfs:   opts.Rootfs,
@@ -69,11 +80,13 @@ func newTask(ctx context.Context, id, namespace string, pid uint32, monitor runt
 	processList[id] = init
 
 	logrus.FieldLogger(logrus.New()).Info("new Task Successfully")
+	logrus.FieldLogger(logrus.New()).Infof("cgroupsssssss", cg)
 
 	return &Task{
 		id:          id,
 		pid:         pid,
 		namespace:   namespace,
+		cg:			 cg,
 		monitor:     monitor,
 		events:      events,
 		processList: processList,

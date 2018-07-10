@@ -165,16 +165,16 @@ func (t *Task) State(ctx context.Context) (runtime.State, error) {
 	}
 
 	stdio := p.Stdio()
-	logrus.FieldLogger(logrus.New()).WithFields(logrus.Fields{
-		"Status":     status,
-		"Pid":        t.pid,
-		"Stdin":      stdio.Stdin,
-		"Stdout":     stdio.Stdout,
-		"Stderr":     stdio.Stderr,
-		"Terminal":   stdio.Terminal,
-		"ExitStatus": uint32(p.ExitStatus()),
-		"ExitedAt":   p.ExitedAt(),
-	}).Info("Container State Successfully")
+	// logrus.FieldLogger(logrus.New()).WithFields(logrus.Fields{
+	// 	"Status":     status,
+	// 	"Pid":        t.pid,
+	// 	"Stdin":      stdio.Stdin,
+	// 	"Stdout":     stdio.Stdout,
+	// 	"Stderr":     stdio.Stderr,
+	// 	"Terminal":   stdio.Terminal,
+	// 	"ExitStatus": uint32(p.ExitStatus()),
+	// 	"ExitedAt":   p.ExitedAt(),
+	// }).Info("Container State Successfully")
 
 	return runtime.State{
 		Status:     status,

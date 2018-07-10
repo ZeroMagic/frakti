@@ -44,7 +44,7 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/transport"
 
-	"github.com/sirupsen/logrus"
+	// "github.com/sirupsen/logrus"
 )
 
 var (
